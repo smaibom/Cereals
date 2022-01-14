@@ -1,0 +1,49 @@
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+
+
+a:hover, a:active {
+  background-color: red;
+}
+</style>
+
+{% extends "base.html" %}
+
+{% block content %}
+<table>
+    <tr class = "header">
+        {% for header in headers %}
+            <th> {{ header }}</th>
+        {% endfor %}
+    </tr>
+    {% for key, values in cereals.items() %}
+            {% for col, value in values.items() %}
+                <th> {{ value }} </th>
+            {% endfor %}
+    {% endfor %}
+
+</table>
+{% if current_user.is_authenticated %}
+  <form method="POST" action="/list/delete">
+      <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Delete Cereal</button>
+  </form>
+  <form method="GET" action="/list/update/{{ id }}">
+    <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Update cereal</button>
+  </form>
+{% endif %}
+<img src="{{ image }}">
+{% endblock %}

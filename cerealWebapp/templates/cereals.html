@@ -1,0 +1,82 @@
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+
+
+a:hover, a:active {
+  background-color: red;
+}
+
+select {
+    width: 100%;
+    height: 30pt;
+    text-align-last:center;
+}
+</style>
+
+
+{% extends "base.html" %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages() %}
+   {% if messages %}
+      {% for message in messages %}
+         {{ message }}
+      {% endfor %}
+   {% endif %}
+{% endwith %}
+ 
+<table id="tableID" border="1" style="cursor: pointer;">
+    <tr class = "header">
+        {% for header in headers %}
+            <th> {{ header }}</th>
+        {% endfor %}
+    </tr>
+    {% for _, values in cereals.items() %}
+      {% for col, value in values.items() %}
+        {% if col == 'id' %}
+        <tr onclick="window.location='/list/{{ value }}';">
+        {% endif %}
+                <th> {{ value }} </th>
+
+      {% endfor %}
+      </tr>
+    {% endfor %}
+</table>
+<br>
+<form method="POST" action="/list">
+  <select name="field" id="field">
+    {% for header in headers %}
+      <option value="{{header}}">{{header}}</option>
+    {% endfor %}
+  </select>
+  <select name="operator" id="operator">
+    <option value="eq">=</option>
+    <option value="noteq">!=</option>
+    <option value="less"><</option>
+    <option value="greater">></option>
+    <option value="lesseq"><=</option>
+    <option value="greatereq">>=</option>
+  </select>
+  <div class="field">
+          <input class="input is-medium" name="value" placeholder="Type in your filter value">
+  </div>
+  <button class="button is-block is-info is-large is-fullwidth">Filter</button>
+</form>
+
+
+{% endblock %}

@@ -1,0 +1,51 @@
+<style>
+    select {
+    width: 100%;
+    height: 30pt;
+    text-align-last:center;
+}
+</style>
+
+{% extends "base.html" %}
+
+    {% block content %}
+        <form method="POST" action="/list/update">
+            {% for header,value in data.items() %}
+                
+                <label for="{{header}}">{{header}}</label><br>
+                {% if header == 'id' %}
+                <div class="field">
+                    <input class="input is-large" type="text" name="{{header}}" placeholder="Type {{header}}" value ="{{value}}" autofocus="" readonly>
+                </div>
+                {% elif header == 'mfr' %}
+
+                <select name="{{ header }}" id="{{ header }}">
+                    {% for val in mfrvals %}
+                        {% if val == value %}
+                            <option value="{{val}}" selected>{{val}}</option>
+                        {% else %}
+                            <option value="{{val}}">{{val}}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <br>
+                {% elif header == 'type' %}
+                    <select name="{{ header }}" id="{{ header }}">
+                        {% for val in typevals %}
+                            {% if val == value %}
+                                <option value="{{val}}" selected>{{val}}</option>
+                            {% else %}
+                                <option value="{{val}}">{{val}}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                <br>
+                {% else %}
+                    <div class="field">
+                        <input class="input is-large" type="text" name="{{header}}" placeholder="Type {{header}}" value ="{{value}}" autofocus="">
+                    </div>
+                {% endif %}
+            {% endfor %}
+        <button class="button is-block is-info is-large is-fullwidth">Update Cereal</button>
+    </form>
+{% endblock %}
