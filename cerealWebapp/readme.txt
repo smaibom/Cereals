@@ -12,3 +12,5 @@ set the envoirment value $env:FLASK_APP="__init__.py" if using powershell to giv
 now start webserver by running
 
 flask run
+
+flask server runs default on http://127.0.0.1:5000/
