@@ -7,6 +7,12 @@ class User(UserMixin,db.Model):
     pwd = db.Column(db.String(128))
     name = db.Column(db.String(20))
 
+class CerealPicture(db.Model):
+    __tablename__ = 'cerealpictures'
+    id = db.Column(db.Integer,primary_key=True)
+    cerealid = db.Column(db.Integer,db.ForeignKey('cereal.id', ondelete='CASCADE'))
+    picturepath = db.Column(db.String(50))
+
 class Cereal(db.Model):
     __tablename__ = 'cereal'
     id = db.Column(db.Integer,primary_key=True)
@@ -26,6 +32,9 @@ class Cereal(db.Model):
     weight = db.Column(db.Float)
     cups = db.Column(db.Float)
     rating = db.Column(db.Integer)
-    picture = db.Column(db.String(50))
+    child = db.relationship(CerealPicture,backref="parent",passive_deletes=True)
+
+
+
 
 

@@ -45,8 +45,7 @@ def apiCereasId(id):
     """
     df = pd.read_sql("SELECT * FROM cereal WHERE id = %s" % id, db.engine).iloc[:,:-1]
     if not df.empty:
-        df = df.iloc[id]
-        return jsonify(df.to_dict()), 200
+        return jsonify(df.to_dict('records')), 200
     else:
         return "", 204
 
@@ -66,6 +65,7 @@ def apiFilterCereals():
     df = pd.read_sql("SELECT * FROM cereal", db.engine).iloc[:,:-1]
     try:
         for (col,val) in filters.items():
+            
             #Match the result get the 2 groups 
             res = prog.match(val)
             op = res.group(1)
@@ -104,15 +104,14 @@ def apiGetImage(id):
     except:
         return abort(404)
         
-@api.route('/api/cereals/delete/<int:id>',methods = ['DELETE'])
+@api.route('/api/cereals/delete/<int:cid>',methods = ['DELETE'])
 @authApi.login_required
-def delete(id):
+def delete(cid):
     """
     DELETE request, deletes the given ID. Returns 200 on success and 204 if invalid ID. Requires user auth
     """
-    id = request.form.get('id')
     #Get cereal from database
-    cereal = Cereal.query.filter(Cereal.id == id).first()
+    cereal = Cereal.query.filter_by(id = cid)
     if cereal == None:
         return "",204
 

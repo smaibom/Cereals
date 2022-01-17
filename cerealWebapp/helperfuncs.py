@@ -1,4 +1,9 @@
 from .models import Cereal
+import os
+from flask import current_app
+from werkzeug.utils import secure_filename
+from .constants import ALLOWED_EXTENSIONS
+
 """
 Helper functions used in multiple files go here
 """
@@ -86,3 +91,14 @@ def set_cereal_value(col,value,cereal):
     else:
         raise ValueError('Invalid column')
     
+
+def upload_file_func(file):
+    def allowed_file(filename):
+        return '.' in filename and \
+            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(current_app.static_folder, filename))
+        return filename
+    raise TypeError

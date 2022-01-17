@@ -36,7 +36,6 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    
 
 
     # Import blueprints for subsections of the page
@@ -55,5 +54,16 @@ def create_app():
     #API no pages
     from .api import api as api_blueprint
     app.register_blueprint(api_blueprint)
+
+
+
+    app.add_url_rule(
+    "/uploads/<name>", endpoint="download_file", build_only=True
+    )
+    
+    app.add_url_rule(
+    "/list/<id>", endpoint="list_spec_cereal"
+    )
+
 
     return app

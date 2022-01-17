@@ -4,13 +4,13 @@ from flask_login import login_required
 from werkzeug.utils import redirect
 from . import db
 import pandas as pd
-from .models import Cereal
-from .helperfuncs import get_value, set_cereal_value
+from .models import Cereal,CerealPicture
+from .helperfuncs import get_value, set_cereal_value, upload_file_func
+import pyodbc
 
 """
 Cereal blueprint functions are placed here
 
-Currently the table for cereals contains picture file ID so the use of iloc[:,:-1] is for removing the last column for display
 TODO: Move pictures to own table, use foreign key relation to link to main table
 """
 
@@ -19,7 +19,7 @@ cereal = Blueprint('cereal', __name__)
 @cereal.route('/list')
 def list():
     #Get all cereals in database
-    df = pd.read_sql("SELECT * FROM cereal", db.engine).iloc[:,:-1]
+    df = pd.read_sql("SELECT * FROM cereal", db.engine)
     #Get headers and data from the dataframe and display on webpage
     cerealdata =df.to_dict('index')
     cerealheaders = df.to_dict().keys()
@@ -32,13 +32,16 @@ def list_with_id(id):
     if df.empty:
         flash('Requested cereal ID dosent exists')
         return redirect(url_for('cereal.list'))
-    image = df.iloc[0,-1]
-    imageloc = url_for('static', filename = image)
-    df = df.iloc[:,:-1]
+    dfImage = pd.read_sql("SELECT picturepath FROM cerealpictures WHERE cerealid = %s" %id, db.engine)
+    if dfImage.empty:
+        image = url_for('static', filename = 'default.png')
+    else:
+        imagePath = dfImage.iloc[0,0]
+        image = url_for('static', filename = imagePath)
     #Get headers and data from the dataframe and display on webpage
     cerealdata =df.to_dict()
     cerealheaders = df.to_dict().keys()
-    return render_template('cereal.html', cereals = cerealdata, headers = cerealheaders, id = id, image = imageloc)
+    return render_template('cereal.html', cereals = cerealdata, headers = cerealheaders, id = id, image = image)
 
 @cereal.route('/list/delete',methods = ["POST"])
 @login_required
@@ -61,26 +64,31 @@ def filter():
     displays the list of cereal based on the given filter
     """
     #Get user input
-    field = request.form.get('field')
-    op = request.form.get('operator')
-    value = request.form.get('value')
+    field = request.form.getlist('field')
+    op = request.form.getlist('op')
+    value = request.form.getlist('value')
+
     #Get entire cereals
-    df = pd.read_sql("SELECT * FROM cereal", db.engine).iloc[:,:-1]
+    df = pd.read_sql("SELECT * FROM cereal", db.engine)
     try:
         #Make value into correct datatype for filtering
-        value = get_value(field,value)
-        if op == 'eq':
-            df = df.loc[df[field] == value] 
-        elif op == 'noteq':
-          df = df.loc[df[field] != value]   
-        elif op == 'greater':
-            df = df.loc[df[field] > value] 
-        elif op == 'less':
-            df = df.loc[df[field] < value] 
-        elif op == 'lesseq':
-            df = df.loc[df[field] <= value] 
-        elif op == 'greatereq':
-            df = df.loc[df[field] >= value] 
+        for i in range(len(field)):
+            print("test")
+            curField = field[i]
+            curValue = get_value(curField,value[i])
+            curOp = op[i]
+            if curOp == 'eq':
+                df = df.loc[df[curField] == curValue] 
+            elif curOp == 'noteq':
+                df = df.loc[df[curField] != curValue]   
+            elif curOp == 'greater':
+                df = df.loc[df[curField] > curValue] 
+            elif curOp == 'less':
+                df = df.loc[df[curField] < curValue] 
+            elif curOp == 'lesseq':
+                df = df.loc[df[curField] <= curValue] 
+            elif curOp == 'greatereq':
+                df = df.loc[df[curField] >= curValue] 
         cerealdata =df.to_dict('index')
         cerealheaders = df.to_dict().keys()
         return render_template('cereals.html', cereals = cerealdata, headers = cerealheaders )
@@ -94,10 +102,13 @@ def add():
     """
     Get request function for loading the add cereal webpage, requires login
     """
-    df = pd.read_sql("SELECT * FROM cereal", db.engine).iloc[:,1:-1]
+    df = pd.read_sql("SELECT * FROM cereal", db.engine).iloc[:,1:]
     mfrVals = df['mfr'].unique()
     typeVals = df['type'].unique()
     return render_template('add.html', headers = df.to_dict().keys(), mfrvals = mfrVals, typevals = typeVals, new = True )
+
+
+
 
 @cereal.route('/list/add',methods = ['POST'])
 @login_required
@@ -129,7 +140,7 @@ def update(id):
     id = id.split('?')
     id = int(id[0])
     #Get specific ID Cereal 
-    df = pd.read_sql("SELECT * FROM cereal", db.engine).iloc[:,:-1]
+    df = pd.read_sql("SELECT * FROM cereal", db.engine)
     #Get possible values of mfr/type
     mfrVals = df['mfr'].unique()
     typeVals = df['type'].unique()
@@ -168,6 +179,37 @@ def update_post():
         flash("Unknown error occured")
     return redirect(url_for('cereal.list'))
 
+@cereal.route('/upload', methods=['POST'])
+def upload_file():
+    id = int(request.form.get('id'))
+    # check if the post request has the file part
+    if 'file' not in request.files:
+        flash('No file part')
+        return redirect(url_for('list_spec_cereal', id=int(id)))
+    file = request.files['file']
+    # If the user does not select a file, the browser submits an
+    # empty file without a filename.
+    if file.filename == '':
+        flash('No selected file')
+        return redirect(url_for('list_spec_cereal', id=int(id)))
+    try:
+        filename = upload_file_func(file)
+        picture = CerealPicture.query.filter_by(cerealid=id).first()
+        #New entry, dosent exist createone
+        if picture != None:
+            picture.picturepath = filename
+        else:
+            cereal = Cereal.query.filter_by(id=id).first()
+            picture = CerealPicture(cerealid = cereal.id, picturepath = filename)
+            db.session.add(picture)
+        db.session.commit()
+        return redirect(url_for('list_spec_cereal', id=int(id)))
+
+    except TypeError:
+        print("test")
+        flash('File not allowed format')
+        return redirect(url_for('list_spec_cereal', id=int(id)))
+
 
 
 
@@ -177,8 +219,13 @@ def import_data():
     with open('cereals.csv') as f:
         for line in f.readlines()[1:]:
             args = line.split(',')
-            newCereal = Cereal(name=args[0],mfr=args[1],type=args[2],calories=args[3],protein=args[4],fat=args[5],sodium=args[6],fiber=args[7],carbo=args[8],sugars=args[9],potass=args[10],vitamins=args[11],shelf=args[12],weight=args[13],cups=args[14],rating=args[15],picture=args[16].rstrip())
+            newCereal = Cereal(name=args[0],mfr=args[1],type=args[2],calories=args[3],protein=args[4],fat=args[5],sodium=args[6],fiber=args[7],carbo=args[8],sugars=args[9],potass=args[10],vitamins=args[11],shelf=args[12],weight=args[13],cups=args[14],rating=args[15])
             db.session.add(newCereal)
-    db.session.commit()
+            db.session.flush()
+            newPicture = CerealPicture(cerealid = newCereal.id,picturepath = args[16].rstrip())
+            db.session.add(newPicture)
+            db.session.flush()
+
+        db.session.commit()
     return "correct"
 

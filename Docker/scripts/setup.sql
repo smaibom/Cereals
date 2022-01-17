@@ -12,6 +12,11 @@ CREATE TABLE cereal (id INT IDENTITY(1,1) PRIMARY KEY, name VARCHAR(50),
                     sugars INT, potass INT,
                     vitamins INT,shelf INT,
                     weight FLOAT, cups FLOAT,
-                    rating INT, picture VARCHAR(50));
+                    rating INT);
+GO
+CREATE TABLE cerealpictures (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    cerealid INT FOREIGN KEY REFERENCES cereal(id) ON DELETE CASCADE, 
+    picturepath VARCHAR(50));
 GO
 

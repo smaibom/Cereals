@@ -11,9 +11,7 @@ td, th {
   padding: 8px;
 }
 
-tr:nth-child(even) {
-  background-color: #dddddd;
-}
+
 
 
 a:hover, a:active {
@@ -21,7 +19,7 @@ a:hover, a:active {
 }
 
 select {
-    width: 100%;
+    width: 20%;
     height: 30pt;
     text-align-last:center;
 }
@@ -58,25 +56,49 @@ select {
     {% endfor %}
 </table>
 <br>
-<form method="POST" action="/list">
-  <select name="field" id="field">
-    {% for header in headers %}
-      <option value="{{header}}">{{header}}</option>
-    {% endfor %}
-  </select>
-  <select name="operator" id="operator">
-    <option value="eq">=</option>
-    <option value="noteq">!=</option>
-    <option value="less"><</option>
-    <option value="greater">></option>
-    <option value="lesseq"><=</option>
-    <option value="greatereq">>=</option>
-  </select>
-  <div class="field">
-          <input class="input is-medium" name="value" placeholder="Type in your filter value">
-  </div>
-  <button class="button is-block is-info is-large is-fullwidth">Filter</button>
-</form>
+<div id="Dropdown operators">
 
+</div>
+<form method="POST" action="/list">
+<table id = "filter">
+  <tr>
+
+  </tr>
+  </table>
+  <button type="button" onclick="addRow()">Add Filter</button>
+  <button type="button" onclick="deleteRow()">Delete last Filter</button>
+  <button class="button is-block is-info is-large is-fullwidth">Filter</button>
+  
+</form>
+<script>
+  function addRow() {
+
+
+    var tablere = document.getElementById('filter').getElementsByTagName('tbody')[0];
+    var fieldHeader = '<select name = field' + 1 + '>';
+    var opheader = '<select name = operator' + 1 + '>';
+    tablere.insertRow().innerHTML = ['<tr>',
+                              '<select name = field>',
+                              '{% for header in headers %}',
+                              '<option value="{{header}}">{{header}}</option>',
+                              '{% endfor %}',
+                              '</select>',
+                              '<select name = op>',
+                                '<option value="eq">=</option>',
+                                '<option value="noteq">!=</option>',
+                                '<option value="less"><</option>',
+                                '<option value="greater">></option>',
+                                '<option value="lesseq"><=</option>',
+                                '<option value="greatereq">>=</option>','</select>',
+                                '<input type="text" name = value height="30pt">',
+                                '</tr>'].join('\n');
+  }
+
+  function deleteRow() {
+    var table = document.getElementById('filter');
+    var rowCount = table.rows.length;
+    table.deleteRow(rowCount -1);
+  }
+  </script>
 
 {% endblock %}
