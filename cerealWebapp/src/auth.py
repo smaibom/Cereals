@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, redirect,url_for, request,flash
+from flask import Blueprint, render_template, redirect,url_for, request,flash, current_app
 from .. import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from .models import User
-from flask_login import login_user, login_required, logout_user
+from flask_login import login_user, login_required, logout_user, current_user
 
 """
 Blueprint for functions related to login and creating users. This file holds the 
@@ -31,10 +31,12 @@ def login_post():
     user = User.query.filter_by(name=name).first()
     if not user or not check_password_hash(user.pwd, pwd):
         flash('Please check your login details and try again.')
+        current_app.logger.info('%s failed to login' % name)
         return redirect(url_for('auth.login')) 
 
     #Login user, return to main index
     login_user(user, remember=remember)
+    current_app.logger.info('%s Logged in successfully' % name)
     return redirect(url_for('main.index'))
 
 
@@ -57,11 +59,14 @@ def signup_post():
     new_user = User(name=name, pwd=generate_password_hash(pwd, method='sha256'))
     db.session.add(new_user)
     db.session.commit()
+    current_app.logger.info('%s added as a user to DB' % name)
     return redirect(url_for('auth.login'))
 
 @auth.route('/logout')
 @login_required
 def logout():
+    name = current_user.name
     logout_user()
+    current_app.logger.info('%s logged out' % name)
     return redirect(url_for('main.index'))
 

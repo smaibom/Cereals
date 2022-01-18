@@ -72,7 +72,6 @@ def filter():
     try:
         #Make value into correct datatype for filtering
         for i in range(len(field)):
-            print("test")
             curField = field[i]
             curValue = change_to_column_type(curField,value[i])
             curOp = op[i]

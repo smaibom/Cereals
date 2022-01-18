@@ -1,8 +1,9 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import urllib
-from flask_httpauth import HTTPBasicAuth
 from flask_login import LoginManager
+import logging
+from logging.config import dictConfig
 
 """
 The entry point for the flask webapp, initializes the database connection, login manager and imports the blueprints.
@@ -23,6 +24,7 @@ def create_app():
     #sqlalchemy database connection string and init of DB
     app.config['SQLALCHEMY_DATABASE_URI'] = "mssql+pyodbc:///?odbc_connect=%s" % params
     app.config['SECRET_KEY'] = secret
+
     db.init_app(app)
 
     #Flask login manager for handling user auth
@@ -35,7 +37,7 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-
+    logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
     # Import blueprints for subsections of the page
     #Auth pages
