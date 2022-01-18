@@ -1,4 +1,4 @@
-from flask import Blueprint, request,jsonify,abort
+from flask import Blueprint, request,jsonify,abort,current_app
 from flask.helpers import send_from_directory
 from werkzeug.security import check_password_hash
 from .. import db
@@ -24,7 +24,9 @@ def verify_password(username, password):
     """
     user = User.query.filter_by(name=username).first()
     if user and check_password_hash(user.pwd, password):
+        current_app.logger.info('%s successfully authenticated on api' % username)
         return username
+    current_app.logger.info('%s failed to authenticated on api' % username)
 
 
 @api.route('/api/cereals/',methods = ['GET'])
@@ -114,10 +116,11 @@ def api_delete_cereals(cid):
     cereal = Cereal.query.filter_by(id = cid)
     if cereal.first() == None:
         return "",204
-
+    
     #Delete and commit if it exist
     cereal.delete()
     db.session.commit()
+    current_app.logger.info('cereal id %s was deleted from database' % cid)
     return "",200
 
 
@@ -139,6 +142,7 @@ def api_add_cereal():
             set_cereal_value(col,val,cereal)
         db.session.add(cereal)
         db.session.commit()
+        current_app.logger.info('Cereal was added from database')
         return "",200
     except Exception as e:
         return "",400
@@ -163,6 +167,7 @@ def api_update_cereal(id):
             set_cereal_value(col,val,cereal)
         db.session.add(cereal)
         db.session.commit()
+        current_app.logger.info('Cereal id %s was updated in database' % cereal.id)
         return "",200
     except:
         return "",400

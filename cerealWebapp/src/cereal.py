@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request,flash
+from flask import Blueprint, render_template, request,flash,current_app
 from flask.helpers import url_for
 from flask_login import login_required
 from werkzeug.utils import redirect
@@ -54,6 +54,7 @@ def delete_id():
     Cereal.query.filter(Cereal.id == id).delete()
     db.session.commit()
     flash("Cereal deleted")
+    current_app.logger.info('Deleted cereal id %s from database' % id)
     return redirect(url_for('cereal.list'))
 
 @cereal.route('/list',methods=['POST'])
@@ -120,6 +121,7 @@ def add_post():
         cereal.picture = ""
         db.session.add(cereal)
         db.session.commit()
+        current_app.logger.info('Added new cereal to DB')
     except ValueError:
         flash("Invalid input given for one or more fields")
     return redirect(url_for('cereal.list'))
@@ -157,7 +159,8 @@ def update_post():
     """
     try:
         #Find the item in database to update
-        cereal = Cereal.query.filter_by(id=int(request.form.get('id'))).first()
+        id = int(request.form.get('id'))
+        cereal = Cereal.query.filter_by(id=id).first()
         #Check if cereal exists, someone could delete during edit
         if cereal == None:
             flash('Update failed, item deleted')
@@ -166,6 +169,7 @@ def update_post():
         for (col,val) in request.form.items():
             set_cereal_value(col,val,cereal)
         db.session.commit()
+        current_app.logger.info('Updated cereal id %s' % id)
     except ValueError:
         flash("Input error on one or more fields")
     except Exception:
@@ -201,6 +205,7 @@ def upload_file():
             picture = CerealPicture(cerealid = cereal.id, picturepath = filename)
             db.session.add(picture)
         db.session.commit()
+        current_app.logger.info('Picture %s uploaded' %filename)
         return redirect(url_for('list_spec_cereal', id=int(id)))
 
     except TypeError:
