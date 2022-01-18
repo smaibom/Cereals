@@ -2,10 +2,10 @@ from flask import Blueprint, render_template, request,flash
 from flask.helpers import url_for
 from flask_login import login_required
 from werkzeug.utils import redirect
-from . import db
+from .. import db
 import pandas as pd
 from .models import Cereal,CerealPicture
-from .helperfuncs import get_value, set_cereal_value, upload_file_func
+from .helperfuncs import change_to_column_type, set_cereal_value, upload_file_func
 import pyodbc
 from .constants import ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID
 
@@ -74,7 +74,7 @@ def filter():
         for i in range(len(field)):
             print("test")
             curField = field[i]
-            curValue = get_value(curField,value[i])
+            curValue = change_to_column_type(curField,value[i])
             curOp = op[i]
             if curOp == 'eq':
                 df = df.loc[df[curField] == curValue] 
@@ -176,6 +176,10 @@ def update_post():
 @cereal.route('/upload', methods=['POST'])
 @login_required
 def upload_file():
+    """
+    Post function for uploading file
+    Requires login
+    """
     id = int(request.form.get('id'))
     # check if the post request has the file part
     if 'file' not in request.files:
@@ -201,7 +205,6 @@ def upload_file():
         return redirect(url_for('list_spec_cereal', id=int(id)))
 
     except TypeError:
-        print("test")
         flash('File not allowed format')
         return redirect(url_for('list_spec_cereal', id=int(id)))
 

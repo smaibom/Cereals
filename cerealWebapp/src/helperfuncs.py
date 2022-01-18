@@ -1,14 +1,13 @@
-from .models import Cereal
 import os
 from flask import current_app
 from werkzeug.utils import secure_filename
-from .constants import ALLOWED_EXTENSIONS
+from .constants import ALLOWED_EXTENSIONS, ALLOWED_MFR, ALLOWED_TYPES
 
 """
 Helper functions used in multiple files go here
 """
 
-def get_value(column,value):
+def change_to_column_type(column,value):
     """
     Takes a column type for a cereal and changes the value into the proper datatype
     args:
@@ -28,7 +27,6 @@ def get_value(column,value):
     def to_string(value):
         return str(value)
 
-    #Hardcoded dict of fucntions to match database column types
     columnTypes = {'name' : to_string, 'mfr' : to_string, 'calories' : to_int, 'carbo' : to_float, 
                             'cups' : to_float, 'fat' : to_int, 'fiber' : to_float, 'potass' : to_int, 
                             'protein' : to_int, 'rating' : to_int, 'shelf' : to_int, 'sodium' : to_int, 
@@ -52,47 +50,63 @@ def set_cereal_value(col,value,cereal):
         ValueError: if a value is incorrect datatype or column header dosent exist
     """
     if col == 'name':
-        cereal.name = get_value(col,value)
+        cereal.name = change_to_column_type(col,value)
     elif col == 'mfr':
-        cereal.mfr =  get_value(col,value)
+        if value in ALLOWED_MFR:
+            cereal.mfr =  change_to_column_type(col,value)
+        else:
+            raise ValueError('Invalid MFR value')
     elif col == 'calories':
-        cereal.calories = get_value(col,value)
+        cereal.calories = change_to_column_type(col,value)
     elif col == 'carbo':
-        cereal.carbo = get_value(col,value)
+        cereal.carbo = change_to_column_type(col,value)
     elif col == 'cups':
-        cereal.cups = get_value(col,value)
+        cereal.cups = change_to_column_type(col,value)
     elif col == 'fat':
-        cereal.fat = get_value(col,value)
+        cereal.fat = change_to_column_type(col,value)
     elif col == 'fiber':
-        cereal.fiber = get_value(col,value)
+        cereal.fiber = change_to_column_type(col,value)
     elif col == 'potass':
-        cereal.potass = get_value(col,value)
+        cereal.potass = change_to_column_type(col,value)
     elif col == 'protein':
-        cereal.protein = get_value(col,value)
+        cereal.protein = change_to_column_type(col,value)
     elif col == 'rating':
-        cereal.rating = get_value(col,value)
+        cereal.rating = change_to_column_type(col,value)
     elif col == 'shelf':
-        cereal.shelf = get_value(col,value)
+        cereal.shelf = change_to_column_type(col,value)
     elif col == 'sodium':
-        cereal.sodium = get_value(col,value)
+        cereal.sodium = change_to_column_type(col,value)
     elif col == 'sugars':
-        cereal.sugars = get_value(col,value)
+        cereal.sugars = change_to_column_type(col,value)
     elif col == 'type':
-        cereal.type = get_value(col,value)
+        cereal.type = change_to_column_type(col,value)
     elif col == 'type':
-        cereal.type = get_value(col,value)
+        if value in ALLOWED_TYPES:
+            cereal.type = change_to_column_type(col,value)
+        else:
+            ValueError('Invalid Type value')
     elif col == 'vitamins':
-        cereal.vitamins = get_value(col,value)
+        cereal.vitamins = change_to_column_type(col,value)
     elif col == 'weight':
-        cereal.weight = get_value(col,value)
+        cereal.weight = change_to_column_type(col,value)
     elif col == 'id':
         #ID is immuteable
-        pass
+        ValueError('Dont change ID')
     else:
         raise ValueError('Invalid column')
     
 
 def upload_file_func(file):
+    """
+    Checks if a file is of an allowed extension type and saves it to the static location
+    args:
+        file: File object uploaded
+    returns:
+        filename: name of the file being uploaded
+    throws:
+        TypeError: If file extension is not allowed
+    """
+    
     def allowed_file(filename):
         return '.' in filename and \
             filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

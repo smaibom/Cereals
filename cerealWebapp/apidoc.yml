@@ -6,7 +6,6 @@ paths:
   /api/cereals:
     get:
       summary: Returns a list of cereal
-      operationId: apiGetAllCereals
       responses:
         '200':
           description: successfull operation
@@ -21,7 +20,6 @@ paths:
       description: >-
         For valid response try integer IDs with value >= 1.       
         Other values will generated exceptions
-      operationId: apiGetCerealId
       parameters:
         - name: id
           in: path

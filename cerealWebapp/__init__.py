@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 import urllib
 from flask_httpauth import HTTPBasicAuth
 from flask_login import LoginManager
-import os
 
 """
 The entry point for the flask webapp, initializes the database connection, login manager and imports the blueprints.
@@ -31,7 +30,7 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
 
-    from .models import User
+    from .src.models import User
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
@@ -40,19 +39,19 @@ def create_app():
 
     # Import blueprints for subsections of the page
     #Auth pages
-    from .auth import auth as auth_blueprint
+    from .src.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint)
 
     #Front page
-    from .main import main as main_blueprint
+    from .src.main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
     #Cereal sub pages
-    from .cereal import cereal as cereal_blueprint
+    from .src.cereal import cereal as cereal_blueprint
     app.register_blueprint(cereal_blueprint)
 
     #API no pages
-    from .api import api as api_blueprint
+    from .src.api import api as api_blueprint
     app.register_blueprint(api_blueprint)
 
 

@@ -3,10 +3,10 @@ from flask.helpers import send_from_directory, url_for
 from flask_login import login_required, current_user
 from werkzeug.security import check_password_hash
 from werkzeug.utils import redirect
-from . import db
+from .. import db
 import pandas as pd
 from .models import Cereal
-from .helperfuncs import get_value, set_cereal_value
+from .helperfuncs import change_to_column_type, set_cereal_value
 from flask_httpauth import HTTPBasicAuth
 import re
 from .models import User
@@ -30,7 +30,7 @@ def verify_password(username, password):
 
 
 @api.route('/api/cereals/',methods = ['GET'])
-def apiGetAllCereals():
+def api_get_all_cereals():
     """
     Get request endpoint that returns all cereal products from database as json with 200 status code
     """
@@ -38,19 +38,19 @@ def apiGetAllCereals():
     return jsonify(df.to_dict('index')), 200
 
 @api.route('/api/cereals/<int:id>',methods = ['GET'])
-def apiGetCerealId(id):
+def api_get_cereal_id(id):
     """
     Get request endpoint with specific id integer value that 
     returns cereal json of the specified id, if id dosent exist it returns nothing with 204 status code
     """
     df = pd.read_sql("SELECT * FROM cereal WHERE id = %d" % id, db.engine)
     if not df.empty:
-        return jsonify(df.to_dict('records')), 200
+        return (df.iloc[0].to_dict()), 200
     else:
         return "", 204
 
 @api.route('/api/cereals/filter',methods = ['GET'])
-def apiFilterCereals():
+def api_filter_cereals():
     """
     Get request for filtering the cereal database. A filter request is a get request of key,value pair. The key is the column and value is a string with 
     the operator being the first(and second if a <= type operator) character, and the remaining chars of the string being the value being filtered at
@@ -71,7 +71,7 @@ def apiFilterCereals():
             op = res.group(1)
             value = res.group(2)
             #Translate the value to its proper type to make it compatable for pandas function
-            value = get_value(col,value)
+            value = change_to_column_type(col,value)
             if op == '<':
                 df = df.loc[df[col] < value] 
             elif op == '>':
@@ -94,7 +94,7 @@ def apiFilterCereals():
         return "", 400
 
 @api.route('/api/cereals/getimage/<int:id>',methods = ['GET'])
-def apiGetImage(id):
+def api_get_image(id):
     """
     GET request for getting a image, returns the image from a given id, and 404 on no file
     """
@@ -108,13 +108,13 @@ def apiGetImage(id):
         
 @api.route('/api/cereals/delete/<int:cid>',methods = ['DELETE'])
 @authApi.login_required
-def apiDeleteCereals(cid):
+def api_delete_cereals(cid):
     """
     DELETE request, deletes the given ID. Returns 200 on success and 204 if invalid ID. Requires user auth
     """
     #Get cereal from database
     cereal = Cereal.query.filter_by(id = cid)
-    if cereal == None:
+    if cereal.first() == None:
         return "",204
 
     #Delete and commit if it exist
@@ -127,7 +127,7 @@ def apiDeleteCereals(cid):
 
 @api.route('/api/cereals/add/', methods=['POST'])
 @authApi.login_required
-def apiAddCereal():
+def api_add_cereal():
     """
     POST request to add cereal to the database, the post data is a json containing the various fields of a cereal and their values.
     Requires user login info in the request
@@ -149,7 +149,7 @@ def apiAddCereal():
    
 @api.route('/api/cereals/add/<int:id>', methods=['PUT'])
 @authApi.login_required
-def apiUpdateCereal(id):
+def api_update_cereal(id):
     """
     POST request to update cereal to the database, if the id exist the cereal is updated with the new values. If the id dosent exist an error is given
     the post data is a json containing the various fields of a cereal and their values
