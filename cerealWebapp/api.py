@@ -30,20 +30,20 @@ def verify_password(username, password):
 
 
 @api.route('/api/cereals/',methods = ['GET'])
-def apiCereals():
+def apiGetAllCereals():
     """
     Get request endpoint that returns all cereal products from database as json with 200 status code
     """
-    df = pd.read_sql("SELECT * FROM cereal", db.engine).iloc[:,:-1]
+    df = pd.read_sql("SELECT * FROM cereal", db.engine)
     return jsonify(df.to_dict('index')), 200
 
 @api.route('/api/cereals/<int:id>',methods = ['GET'])
-def apiCereasId(id):
+def apiGetCerealId(id):
     """
     Get request endpoint with specific id integer value that 
     returns cereal json of the specified id, if id dosent exist it returns nothing with 204 status code
     """
-    df = pd.read_sql("SELECT * FROM cereal WHERE id = %s" % id, db.engine).iloc[:,:-1]
+    df = pd.read_sql("SELECT * FROM cereal WHERE id = %d" % id, db.engine)
     if not df.empty:
         return jsonify(df.to_dict('records')), 200
     else:
@@ -62,7 +62,7 @@ def apiFilterCereals():
     #The second part checks for any word pattern to follow and is stored in group 2
     prog = re.compile(r'([<>!=]=?)([ -%,.\w]+)')
     filters = request.args
-    df = pd.read_sql("SELECT * FROM cereal", db.engine).iloc[:,:-1]
+    df = pd.read_sql("SELECT * FROM cereal", db.engine)
     try:
         for (col,val) in filters.items():
             
@@ -87,6 +87,8 @@ def apiFilterCereals():
             #The regex accepts it but technically not considered a valid request
             elif op == '==':
                 return "", 400
+            if df.empty:
+                return "", 204
         return jsonify(df.to_dict('index')), 200
     except Exception as e:
         return "", 400
@@ -97,16 +99,16 @@ def apiGetImage(id):
     GET request for getting a image, returns the image from a given id, and 404 on no file
     """
     try:
-        df = pd.read_sql("SELECT * FROM cereal WHERE id = %s" %id, db.engine)
+        df = pd.read_sql("SELECT picturepath FROM cerealpictures WHERE cerealid = %d" %id, db.engine)
         #image loc is in the last column of the database
-        filename = df.iloc[0,-1]
+        filename = df.iloc[0,0]
         return send_from_directory('static', path=filename, as_attachment=True), 200
     except:
         return abort(404)
         
 @api.route('/api/cereals/delete/<int:cid>',methods = ['DELETE'])
 @authApi.login_required
-def delete(cid):
+def apiDeleteCereals(cid):
     """
     DELETE request, deletes the given ID. Returns 200 on success and 204 if invalid ID. Requires user auth
     """
@@ -125,7 +127,7 @@ def delete(cid):
 
 @api.route('/api/cereals/add/', methods=['POST'])
 @authApi.login_required
-def addCereal():
+def apiAddCereal():
     """
     POST request to add cereal to the database, the post data is a json containing the various fields of a cereal and their values.
     Requires user login info in the request
@@ -145,9 +147,9 @@ def addCereal():
     
 
    
-@api.route('/api/cereals/add/<int:id>', methods=['POST'])
+@api.route('/api/cereals/add/<int:id>', methods=['PUT'])
 @authApi.login_required
-def updateCereal(id):
+def apiUpdateCereal(id):
     """
     POST request to update cereal to the database, if the id exist the cereal is updated with the new values. If the id dosent exist an error is given
     the post data is a json containing the various fields of a cereal and their values
@@ -156,7 +158,7 @@ def updateCereal(id):
     cereal = Cereal.query.filter_by(id=id).first()
     #Check if cereal exists, it is not allowed to edit an not existing id
     if cereal == None:
-        return "",400
+        return "",204
     json = request.get_json()
     try:
         for (col,val) in json.items():

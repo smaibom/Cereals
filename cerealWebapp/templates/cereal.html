@@ -20,10 +20,17 @@ a:hover, a:active {
   background-color: red;
 }
 </style>
-
 {% extends "base.html" %}
 
 {% block content %}
+
+{% with messages = get_flashed_messages() %}
+   {% if messages %}
+      {% for message in messages %}
+         {{ message }}
+      {% endfor %}
+   {% endif %}
+{% endwith %}
 <table>
     <tr class = "header">
         {% for header in headers %}
@@ -43,6 +50,10 @@ a:hover, a:active {
   </form>
   <form method="GET" action="/list/update/{{ id }}">
     <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Update cereal</button>
+  </form>
+  <form method="POST" action= "/upload" enctype=multipart/form-data>
+    <input type=file name=file>
+    <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Upload cereal picture</button>
   </form>
 {% endif %}
 <img src="{{ image }}">

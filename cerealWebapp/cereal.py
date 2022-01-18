@@ -7,6 +7,7 @@ import pandas as pd
 from .models import Cereal,CerealPicture
 from .helperfuncs import get_value, set_cereal_value, upload_file_func
 import pyodbc
+from .constants import ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID
 
 """
 Cereal blueprint functions are placed here
@@ -22,8 +23,7 @@ def list():
     df = pd.read_sql("SELECT * FROM cereal", db.engine)
     #Get headers and data from the dataframe and display on webpage
     cerealdata =df.to_dict('index')
-    cerealheaders = df.to_dict().keys()
-    return render_template('cereals.html', cereals = cerealdata, headers = cerealheaders )
+    return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID )
 
 @cereal.route('/list/<int:id>')
 def list_with_id(id):
@@ -40,8 +40,7 @@ def list_with_id(id):
         image = url_for('static', filename = imagePath)
     #Get headers and data from the dataframe and display on webpage
     cerealdata =df.to_dict()
-    cerealheaders = df.to_dict().keys()
-    return render_template('cereal.html', cereals = cerealdata, headers = cerealheaders, id = id, image = image)
+    return render_template('cereal.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID, id = id, image = image)
 
 @cereal.route('/list/delete',methods = ["POST"])
 @login_required
@@ -90,8 +89,7 @@ def filter():
             elif curOp == 'greatereq':
                 df = df.loc[df[curField] >= curValue] 
         cerealdata =df.to_dict('index')
-        cerealheaders = df.to_dict().keys()
-        return render_template('cereals.html', cereals = cerealdata, headers = cerealheaders )
+        return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID, fields = field, ops = op, values = value )
     except:
         flash('invalid filter input given')
         return redirect(url_for('cereal.list'))
@@ -102,10 +100,9 @@ def add():
     """
     Get request function for loading the add cereal webpage, requires login
     """
-    df = pd.read_sql("SELECT * FROM cereal", db.engine).iloc[:,1:]
-    mfrVals = df['mfr'].unique()
-    typeVals = df['type'].unique()
-    return render_template('add.html', headers = df.to_dict().keys(), mfrvals = mfrVals, typevals = typeVals, new = True )
+    mfrVals = ALLOWED_MFR
+    typeVals = ALLOWED_TYPES
+    return render_template('add.html', headers = CEREAL_HEADERS_WITHOUT_ID, mfrvals = mfrVals, typevals = typeVals, new = True )
 
 
 
@@ -140,17 +137,14 @@ def update(id):
     id = id.split('?')
     id = int(id[0])
     #Get specific ID Cereal 
-    df = pd.read_sql("SELECT * FROM cereal", db.engine)
+    df = pd.read_sql("SELECT * FROM cereal WHERE id = %d" % id, db.engine)
     #Get possible values of mfr/type
-    mfrVals = df['mfr'].unique()
-    typeVals = df['type'].unique()
-    df = df.loc[df['id'] == id]
+    mfrVals = ALLOWED_MFR
+    typeVals = ALLOWED_TYPES
 
     if df.empty:
         flash("Update page for requested item dosent exist")
         return redirect(url_for('cereal.list'))
-    #Get the specific cereal we need
-    df = df.loc[df['id'] == id]
     #Get headers and data from the dataframe and display on webpage
     cerealdata =df.iloc[0].to_dict()
     return render_template('update.html', data = cerealdata, mfrvals = mfrVals,typevals = typeVals)
@@ -180,6 +174,7 @@ def update_post():
     return redirect(url_for('cereal.list'))
 
 @cereal.route('/upload', methods=['POST'])
+@login_required
 def upload_file():
     id = int(request.form.get('id'))
     # check if the post request has the file part
