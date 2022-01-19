@@ -5,13 +5,28 @@ from .models import Cereal, CerealPicture
 import pandas as pd
 import sqlalchemy
 
-def db_get_all_as_df():
-    pass
-
-def db_get_as_df(sql):
+def db_get_all_cereals_as_df():
     """
+    Returns all entries from cereal table into a pandas dataframe
+    returns:
+        Pandas Dataframe with all cereal values from DB
+    """
+    sql = "SELECT * FROM cereal"
+    try:
+        df = pd.read_sql(sql, db.engine)
+        return df
+    except sqlalchemy.exc.OperationalError:
+        current_app.logger.critical('DB Error occured when getting cereal data')
+
+def db_get_id_cereal_as_df(id):
+    """
+    Returns a dataframe based on a given SQL query. Is not sanatized
+    TODO: Change to query a specific ID with the model parameters
     """
     try:
+        cereal = Cereal.query.filter_by(id = id).first()
+        print(cereal.__table__.values)
+        sql = "SELECT * FROM cereal where id = %s" %id
         df = pd.read_sql(sql, db.engine)
         return df
     except sqlalchemy.exc.OperationalError:
@@ -24,53 +39,105 @@ def db_delete_cereal(id):
         id: int value of the cereal id being deleted
     returns:
         True: On success
-        False: On failure
+        False: On DB failure
+    throws:
+        LookupError: If the cereal does not exist
     """
     try:
-        Cereal.query.filter(Cereal.id == id).delete()
+        cereal = Cereal.query.filter_by(id = id)
+
+        #Check if it exist before we attempt to delete
+        if cereal.first() == None:
+            raise LookupError('Cereal does not exist')
+
+        #Delete and commit if it exist
+        cereal.delete()
         db.session.commit()
         current_app.logger.info('Deleted cereal id %s from database' % id)
         return True
+
     except sqlalchemy.exc.OperationalError:
         current_app.logger.critical('DB Error occured when getting cereal image')
         return False
 
+
 def db_add_cereal(input_dict):
+    """
+    Adds a cereal to the DB
+    args:
+        input_dict: a dictionary with the values being added where keys are the column names
+    returns:
+        True: On successfull operation
+        False: On DB failure
+    throws:
+        ValueError: If input_dict parameters are incorrect, invalid column or value types
+    """
     try:
+        #Create new cereal object
         cereal = Cereal()
+        
+        #Iterate over each column, value and add it to the cereal object
         for (col,val) in input_dict.items():
             set_cereal_value(col,val,cereal)
-        cereal.picture = ""
+
+        #Add cereal object to DB and commit
         db.session.add(cereal)
         db.session.commit()
         current_app.logger.info('Added new cereal to DB')
         return True
+
     except sqlalchemy.exc.OperationalError:
         current_app.logger.critical('DB Error occured when getting cereal image')
         return False
+
     except ValueError:
-        return False
+        raise ValueError('Invalid input parameters')
+
 
 def db_update_cereal(id,input_dict):
+    """
+    Updates an existing cereal object in the database
+    args:
+        id: Integer value of the id of the cereal being updated
+        input_dict: a dictionary with the values being updated where keys are the column names
+    returns:
+        True: On success
+        False: On DB failure
+    throws:
+        LookupError: If cereal does not exist
+    """
     try:
+        #Query the cereal in DB
         cereal = Cereal.query.filter_by(id=id).first()
+
         #Check if cereal exists, someone could delete during edit
         if cereal == None:
             raise LookupError
-        #Update all values even if they are unchanged, 
+        
+        #Update values and commit
         for (col,val) in input_dict.items():
             set_cereal_value(col,val,cereal)
         db.session.commit()
         current_app.logger.info('Updated cereal id %s' % id)
         return True
+
     except sqlalchemy.exc.OperationalError:
         current_app.logger.critical('DB Error occured when getting cereal image')
         return False
 
 
 def db_get_cereal_imagepath(id):
+    """
+    Gets a imagepath from the database
+    args:
+        id: Integer value of the cereal id picture we are returning
+    returns:
+        Filename string if the filename exist, None on DB failure or if picture dosent exist
+    """
     try:
+        #Query for picture
         picture = CerealPicture.query.filter_by(cerealid=id).first()
+
         #Check if picture exists
         if picture != None:
             return picture.picturepath
@@ -79,13 +146,24 @@ def db_get_cereal_imagepath(id):
         current_app.logger.critical('DB Error occured when getting cereal image')
 
 def db_add_cereal_imagepath(cereal_id,filename):
+    """
+    Adds the path of a cereal image stored on server to the DB
+    args:
+        cereal_id: Integer value of the cereal id which the image is to be linked to
+        filename: String value of the path to the file in the static folder
+    returns:
+        True: On success
+        False: On DB failure
+    throws:
+        LookupError: If cereal does not exist
+    """
     try:
         #We need the cereal to add foreign key relation
         cereal = Cereal.query.filter_by(id=cereal_id).first()
 
         #Check if cereal exist, might have been deleted
         if not cereal:
-            raise LookupError
+            raise LookupError('Attempted to add cereal picture, but the cereal no longer exist')
         
         #Add picturepath to DB
         picture = CerealPicture(cerealid = cereal.id, picturepath = filename)
@@ -97,15 +175,27 @@ def db_add_cereal_imagepath(cereal_id,filename):
     except sqlalchemy.exc.OperationalError:
         current_app.logger.critical('DB Error occured when updating cereal image')
         return False
-        
+
+
 def db_update_cereal_imagepath(cereal_id,filename):
+    """
+    Updates the filepath to an image for a given cereal
+    args:
+        cereal_id: Integer value of the cereal id which the image is to be linked to
+        filename: String value of the path to the file in the static folder
+    returns:
+        True: On success
+        False: On DB failure
+    throws:
+        LookupError: If cereal does not exist
+    """
     try:
         #Query the existing picture location
         cereal_picture = CerealPicture.query.filter_by(cerealid=cereal_id).first()
 
         #Check if cereal exist, might have been deleted, if cereal is deleted it cascades into cerealpicture
         if not cereal_picture:
-            raise LookupError
+            raise LookupError('Attempted to modify cereal picture but it dosent exist in DB')
 
         #Update picturepath
         cereal_picture.picturepath = filename

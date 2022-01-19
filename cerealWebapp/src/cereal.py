@@ -6,11 +6,9 @@ from .. import db
 from .models import Cereal,CerealPicture
 from .helperfuncs import change_to_column_type, upload_file_func
 from .constants import ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID, FILTER_OPERATORS
-from .dbfunctions import db_add_cereal, db_add_cereal_imagepath, db_delete_cereal, db_get_as_df, db_get_cereal_imagepath, db_update_cereal, db_update_cereal_imagepath
+from .dbfunctions import db_add_cereal, db_add_cereal_imagepath, db_delete_cereal, db_get_all_cereals_as_df,  db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal, db_update_cereal_imagepath
 """
 Cereal blueprint functions are placed here
-
-TODO: Move pictures to own table, use foreign key relation to link to main table
 """
 
 cereal = Blueprint('cereal', __name__)
@@ -18,8 +16,7 @@ cereal = Blueprint('cereal', __name__)
 @cereal.route('/list')
 def list():
     #Get all cereals in database
-    sql = "SELECT * FROM cereal"
-    df = db_get_as_df(sql)
+    df = db_get_all_cereals_as_df()
 
     #Get headers and data from the dataframe and display on webpage
     cerealdata =df.to_dict('index')
@@ -28,11 +25,11 @@ def list():
 @cereal.route('/list/<int:id>')
 def list_with_id(id):
     """
-    Get request function for listing specific 
+    Get request function for listing specific cereals
     """
     #Get specific ID Cereal 
     sql = "SELECT * FROM cereal WHERE id = %s" %id
-    df = db_get_as_df(sql)
+    df = db_get_id_cereal_as_df(id)
 
     #Check if id exists, if not we return user to list view
     if df.empty:
@@ -77,8 +74,8 @@ def filter():
     op = request.form.getlist('op')
     value = request.form.getlist('value')
     #Get entire cereals
-    sql = "SELECT * FROM cereal"
-    df = db_get_as_df(sql)
+
+    df = db_get_all_cereals_as_df()
     prevFilters = []
     try:
         #Make value into correct datatype for filtering
@@ -104,6 +101,7 @@ def filter():
     except:
         flash('invalid filter input given')
         return redirect(url_for('cereal.list'))
+
 
 @cereal.route('/list/add')
 @login_required
@@ -141,7 +139,7 @@ def update(id):
     id = int(id[0])
     #Get specific ID Cereal 
     sql = "SELECT * FROM cereal WHERE id = %d" % id
-    df = db_get_as_df(sql)
+    df = db_get_all_cereals_as_df(sql)
     #Get possible values of mfr/type
     mfrVals = ALLOWED_MFR
     typeVals = ALLOWED_TYPES
@@ -205,13 +203,13 @@ def upload_file():
                 flash('updated image successfully')
             else:
                 flash('Image not updated')
+        #Picture dosent exist, add it
         else:
-            cereal = Cereal.query.filter_by(id=id).first()
-            picture = CerealPicture(cerealid = cereal.id, picturepath = filename)
-            db.session.add(picture)
-        db.session.commit()
+            if db_add_cereal_imagepath(id,filename):
+                flash('image added successfully')
+            else:
+                flash('Image not updated')
         current_app.logger.info('Picture %s uploaded' %filename)
-        flash('Cereal picture changed or added')
         return redirect(url_for('cereal.list_with_id', id=int(id)))
     except LookupError:
         flash('Cereal does not exist')
@@ -219,12 +217,6 @@ def upload_file():
     except TypeError:
         flash('File not allowed format')
         return redirect(url_for('cereal.list_with_id', id=int(id)))
-
-
-@cereal.route('/test')
-def test():
-    print(db_delete_cereal(5))
-    print(db_delete_cereal(5))
 
 @cereal.route('/import')
 def import_data():

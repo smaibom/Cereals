@@ -57,19 +57,18 @@ select {
 </table>
 <br>
 <form method="POST" action="/list">
-  <table id = "filter" border="1" style="cursor: pointer;">
-    <tbody>
-      {% if prevFilters %}
-        {% for (field,op,val) in prevFilters %}
-        <tr>
+  <ul id = 'filter'>
+    {% if prevFilters %}
+      {% for (field,op,val) in prevFilters %}
+        <li>
           <select name = field>
-          {% for header in headers %}
-            {% if header == field %}
-              <option value="{{header}}" selected>{{header}}</option>
-            {% else %}
-              <option value="{{header}}" >{{header}}</option>
-            {% endif %}
-          {% endfor %}'
+            {% for header in headers %}
+              {% if header == field %}
+                <option value="{{header}}" selected>{{header}}</option>
+              {% else %}
+                <option value="{{header}}" >{{header}}</option>
+              {% endif %}
+            {% endfor %}'
           </select>
           <select name = op>
             {% for (name,operator) in operators.items()%}
@@ -79,44 +78,61 @@ select {
                 <option value="{{name}}" >{{operator}}</option>
               {% endif %}
             {% endfor %}'
-            </select>
-          <input type="text" name = value height="30pt", value = "{{val}}">
-        </tr>
-        <br>
-        {% endfor %}
-      {% endif %}
-    </tbody>
-  </table>
-  <button type="button" onclick="addRow()" style="float: left;">Add Filter</button>
+          </select>
+          <input type="text" name = value value = "{{val}}">
+        </li>
+      {% endfor %}
+  {% endif %}
+  </ul>
+  <button type="button" onclick="addRow({{headers}},{{operators}})" style="float: left;">Add Filter</button>
   <button type="button" onclick="deleteRow()" style="float: left;">Delete last Filter</button>
   <button class="button is-block is-info is-large is-fullwidth">Filter</button>
 </form>
 <script>
-  function addRow() {
-    var tablere = document.getElementById('filter').getElementsByTagName('tbody')[0];
-    tablere.insertRow().innerHTML = ['<tr>',
-                              '<select name = field>',
-                              '{% for header in headers %}',
-                              '<option value="{{header}}">{{header}}</option>',
-                              '{% endfor %}',
-                              '</select>',
-                              '<select name = op>',
-                              '{% for (name,op) in operators.items() %}',
-                              '<option value="{{name}}">{{op}}</option>',
-                              '{% endfor %}',
-                              '</select>',
-                                '<input type="text" name = value height="30pt">',
-                                '</tr>'].join('\n');
+  function addRow(headers,ops) {
+    var list = document.getElementById('filter');
+    var li = document.createElement("li");
+
+
+    //Create the first selection box
+    var selectField = document.createElement("select");
+    selectField.name = "field"
+    for (var i = 0; i < headers.length; i++) {
+      var option = document.createElement("option");
+      option.value = headers[i];
+      option.text = headers[i];
+      selectField.appendChild(option);
+    }
+    //add to the list entry
+    li.appendChild(selectField)
+
+    //Create second selection box
+    var selectOp = document.createElement("select");
+    selectOp.name = "op"
+    for (const [key, value] of Object.entries(ops)) {
+        var option = document.createElement("option");
+        option.value = key;
+        option.text = value;
+        selectOp.appendChild(option);
+    }
+    //Add to list entry
+    li.appendChild(selectOp)
+
+    var input = document.createElement("input");
+    input.name = "value"
+    li.appendChild(input)
+
+    list.appendChild(li)
   }
 
   function deleteRow() {
-    var table = document.getElementById('filter');
-
-    var rowCount = table.rows.length;
-    console.log(table.rows);
-    table.deleteRow(rowCount -1);
+    var list = document.getElementById('filter');
+    //I dont know what is wrong here but this fixes it, the added list entries from the html wont be deleted otherwise, TODO: Look into this
+    if(list.lastChild.length == 13){
+      list.removeChild(list.lastChild)
+    }
+    list.removeChild(list.lastChild)
   }
 
   </script>
-
 {% endblock %}
