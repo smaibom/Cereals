@@ -3,12 +3,10 @@ from flask.helpers import url_for
 from flask_login import login_required
 from werkzeug.utils import redirect
 from .. import db
-import pandas as pd
 from .models import Cereal,CerealPicture
-from .helperfuncs import change_to_column_type, set_cereal_value, upload_file_func
-import pyodbc
-from .constants import ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID
-
+from .helperfuncs import change_to_column_type, upload_file_func
+from .constants import ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID, FILTER_OPERATORS
+from .dbfunctions import db_add_cereal, db_add_cereal_imagepath, db_delete_cereal, db_get_as_df, db_get_cereal_imagepath, db_update_cereal, db_update_cereal_imagepath
 """
 Cereal blueprint functions are placed here
 
@@ -20,41 +18,52 @@ cereal = Blueprint('cereal', __name__)
 @cereal.route('/list')
 def list():
     #Get all cereals in database
-    df = pd.read_sql("SELECT * FROM cereal", db.engine)
+    sql = "SELECT * FROM cereal"
+    df = db_get_as_df(sql)
+
     #Get headers and data from the dataframe and display on webpage
     cerealdata =df.to_dict('index')
-    return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID )
+    return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID, operators = FILTER_OPERATORS )
 
 @cereal.route('/list/<int:id>')
 def list_with_id(id):
+    """
+    Get request function for listing specific 
+    """
     #Get specific ID Cereal 
-    df = pd.read_sql("SELECT * FROM cereal WHERE id = %s" %id, db.engine)
+    sql = "SELECT * FROM cereal WHERE id = %s" %id
+    df = db_get_as_df(sql)
+
+    #Check if id exists, if not we return user to list view
     if df.empty:
         flash('Requested cereal ID dosent exists')
         return redirect(url_for('cereal.list'))
-    dfImage = pd.read_sql("SELECT picturepath FROM cerealpictures WHERE cerealid = %s" %id, db.engine)
-    if dfImage.empty:
-        image = url_for('static', filename = 'default.png')
+    
+    #Get image, if no imagepath is set we set to default image
+    dfImage = db_get_cereal_imagepath(id)
+    if dfImage:
+        image = url_for('static', filename = dfImage)
     else:
-        imagePath = dfImage.iloc[0,0]
-        image = url_for('static', filename = imagePath)
-    #Get headers and data from the dataframe and display on webpage
-    cerealdata =df.to_dict()
+        image = url_for('static', filename = 'default.png')
+
+    cerealdata = df.to_dict()
+
+    #Pass data along to template
     return render_template('cereal.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID, id = id, image = image)
 
 @cereal.route('/list/delete',methods = ["POST"])
 @login_required
-def delete_id():
+def delete_with_id():
     """
     Function for deleting cereal IDs when user presses delte in the specific cereal page, this is a POST request as html tags only allow GET and POST
     requires login
     """
     #We get the ID from the post request and delete it and redirect back to list view
     id = request.form.get('id')
-    Cereal.query.filter(Cereal.id == id).delete()
-    db.session.commit()
-    flash("Cereal deleted")
-    current_app.logger.info('Deleted cereal id %s from database' % id)
+    if db_delete_cereal(id):
+        flash("Cereal deleted")
+    else:
+        flash("Cereal not deleted")
     return redirect(url_for('cereal.list'))
 
 @cereal.route('/list',methods=['POST'])
@@ -67,15 +76,17 @@ def filter():
     field = request.form.getlist('field')
     op = request.form.getlist('op')
     value = request.form.getlist('value')
-
     #Get entire cereals
-    df = pd.read_sql("SELECT * FROM cereal", db.engine)
+    sql = "SELECT * FROM cereal"
+    df = db_get_as_df(sql)
+    prevFilters = []
     try:
         #Make value into correct datatype for filtering
         for i in range(len(field)):
             curField = field[i]
             curValue = change_to_column_type(curField,value[i])
             curOp = op[i]
+            prevFilters.append((curField,curOp,curValue))
             if curOp == 'eq':
                 df = df.loc[df[curField] == curValue] 
             elif curOp == 'noteq':
@@ -89,7 +100,7 @@ def filter():
             elif curOp == 'greatereq':
                 df = df.loc[df[curField] >= curValue] 
         cerealdata =df.to_dict('index')
-        return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID, fields = field, ops = op, values = value )
+        return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID,  operators = FILTER_OPERATORS, prevFilters = prevFilters)
     except:
         flash('invalid filter input given')
         return redirect(url_for('cereal.list'))
@@ -100,9 +111,7 @@ def add():
     """
     Get request function for loading the add cereal webpage, requires login
     """
-    mfrVals = ALLOWED_MFR
-    typeVals = ALLOWED_TYPES
-    return render_template('add.html', headers = CEREAL_HEADERS_WITHOUT_ID, mfrvals = mfrVals, typevals = typeVals, new = True )
+    return render_template('add.html', headers = CEREAL_HEADERS_WITHOUT_ID, mfrvals = ALLOWED_MFR, typevals = ALLOWED_TYPES, new = True )
 
 
 
@@ -113,16 +122,9 @@ def add_post():
     """
     Post request function for when user presses add on the add subpage on the webpage, requires login
     """
-    try:
-        #Fill values of cereal from input values, if any input value is not filled with correct value it fails
-        cereal = Cereal()
-        for (col,val) in request.form.items():
-            set_cereal_value(col,val,cereal)
-        cereal.picture = ""
-        db.session.add(cereal)
-        db.session.commit()
-        current_app.logger.info('Added new cereal to DB')
-    except ValueError:
+    if db_add_cereal(request.form):
+        flash('Added cereal to DB')
+    else:
         flash("Invalid input given for one or more fields")
     return redirect(url_for('cereal.list'))
 
@@ -138,7 +140,8 @@ def update(id):
     id = id.split('?')
     id = int(id[0])
     #Get specific ID Cereal 
-    df = pd.read_sql("SELECT * FROM cereal WHERE id = %d" % id, db.engine)
+    sql = "SELECT * FROM cereal WHERE id = %d" % id
+    df = db_get_as_df(sql)
     #Get possible values of mfr/type
     mfrVals = ALLOWED_MFR
     typeVals = ALLOWED_TYPES
@@ -160,20 +163,15 @@ def update_post():
     try:
         #Find the item in database to update
         id = int(request.form.get('id'))
-        cereal = Cereal.query.filter_by(id=id).first()
-        #Check if cereal exists, someone could delete during edit
-        if cereal == None:
-            flash('Update failed, item deleted')
-            return redirect(url_for('cereal.list'))
-        #Update all values even if they are unchanged, 
-        for (col,val) in request.form.items():
-            set_cereal_value(col,val,cereal)
-        db.session.commit()
-        current_app.logger.info('Updated cereal id %s' % id)
+        if db_update_cereal(id,request.form):
+            flash("%s successfully updated" % id)
     except ValueError:
         flash("Input error on one or more fields")
-    except Exception:
-        flash("Unknown error occured")
+    except KeyError:
+        #Tried to set a column that dosent exist
+        pass
+    except LookupError:
+        flash('Cereal does not exist')
     return redirect(url_for('cereal.list'))
 
 @cereal.route('/upload', methods=['POST'])
@@ -183,37 +181,50 @@ def upload_file():
     Post function for uploading file
     Requires login
     """
+
     id = int(request.form.get('id'))
     # check if the post request has the file part
     if 'file' not in request.files:
         flash('No file part')
-        return redirect(url_for('list_spec_cereal', id=int(id)))
+        return redirect(url_for('cereal.list_with_id', id=int(id)))
+
     file = request.files['file']
     # If the user does not select a file, the browser submits an
     # empty file without a filename.
     if file.filename == '':
         flash('No selected file')
-        return redirect(url_for('list_spec_cereal', id=int(id)))
+        return redirect(url_for('cereal.list_with_id', id=int(id)))
+    
     try:
+        picture = db_get_cereal_imagepath(id)
         filename = upload_file_func(file)
-        picture = CerealPicture.query.filter_by(cerealid=id).first()
-        #New entry, dosent exist createone
-        if picture != None:
-            picture.picturepath = filename
+
+        #cereal has picture, update it
+        if picture:
+            if db_update_cereal_imagepath(id,filename):
+                flash('updated image successfully')
+            else:
+                flash('Image not updated')
         else:
             cereal = Cereal.query.filter_by(id=id).first()
             picture = CerealPicture(cerealid = cereal.id, picturepath = filename)
             db.session.add(picture)
         db.session.commit()
         current_app.logger.info('Picture %s uploaded' %filename)
-        return redirect(url_for('list_spec_cereal', id=int(id)))
-
+        flash('Cereal picture changed or added')
+        return redirect(url_for('cereal.list_with_id', id=int(id)))
+    except LookupError:
+        flash('Cereal does not exist')
+        return redirect(url_for('cereal.list'))
     except TypeError:
         flash('File not allowed format')
-        return redirect(url_for('list_spec_cereal', id=int(id)))
+        return redirect(url_for('cereal.list_with_id', id=int(id)))
 
 
-
+@cereal.route('/test')
+def test():
+    print(db_delete_cereal(5))
+    print(db_delete_cereal(5))
 
 @cereal.route('/import')
 def import_data():

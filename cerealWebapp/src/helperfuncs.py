@@ -1,7 +1,7 @@
 import os
 from flask import current_app
 from werkzeug.utils import secure_filename
-from .constants import ALLOWED_EXTENSIONS, ALLOWED_MFR, ALLOWED_TYPES
+from .constants import ALLOWED_EXTENSIONS, ALLOWED_VALUES
 
 """
 Helper functions used in multiple files go here
@@ -18,26 +18,35 @@ def change_to_column_type(column,value):
     throws:
         ValueError if value is not changeable into desired datatype
     """
-    def to_int(value):
-        return int(value) 
+    def check_int(value,constaints):
+        result_val = int(value) 
+        return result_val
 
-    def to_float(value):
+    def check_float(value,constraints):
         return float(value)
 
-    def to_string(value):
-        return str(value)
+    def check_string(value,constaints):
+        if len(value) > 0:
+            return value
+        raise ValueError()
+    
+    def check_char(value,constraints):
+        if len(value) > 0 and value in constraints:
+            return value
+        raise ValueError()
 
-    columnTypes = {'name' : to_string, 'mfr' : to_string, 'calories' : to_int, 'carbo' : to_float, 
-                            'cups' : to_float, 'fat' : to_int, 'fiber' : to_float, 'potass' : to_int, 
-                            'protein' : to_int, 'rating' : to_int, 'shelf' : to_int, 'sodium' : to_int, 
-                            'sugars' : to_int, 'type' : to_string, 'vitamins' : to_int, 'weight' : to_float,
-                            'id' : to_int}
-    try:
-        #Look up function to translate datatype
-        func = columnTypes[column]
-        return func(value)
-    except:
-        raise ValueError
+
+    column_types = {'name' : check_string, 'mfr' : check_char, 'calories' : check_int, 'carbo' : check_float, 
+                            'cups' : check_float, 'fat' : check_int, 'fiber' : check_float, 'potass' : check_int, 
+                            'protein' : check_int, 'rating' : check_int, 'shelf' : check_int, 'sodium' : check_int, 
+                            'sugars' : check_int, 'type' : check_char, 'vitamins' : check_int, 'weight' : check_float,
+                            'id' : check_int}
+    #Look up function to translate datatype
+    check_function = column_types[column]
+    allowed_values = ALLOWED_VALUES[column]
+    result = check_function(value,allowed_values)
+    return result
+
 
 def set_cereal_value(col,value,cereal):
     """
@@ -49,51 +58,52 @@ def set_cereal_value(col,value,cereal):
     throws:
         ValueError: if a value is incorrect datatype or column header dosent exist
     """
-    if col == 'name':
-        cereal.name = change_to_column_type(col,value)
-    elif col == 'mfr':
-        if value in ALLOWED_MFR:
+
+    #Set fields
+    try:
+        if col == 'name':
+            cereal.name = change_to_column_type(col,value)
+        elif col == 'mfr':
             cereal.mfr =  change_to_column_type(col,value)
-        else:
-            raise ValueError('Invalid MFR value')
-    elif col == 'calories':
-        cereal.calories = change_to_column_type(col,value)
-    elif col == 'carbo':
-        cereal.carbo = change_to_column_type(col,value)
-    elif col == 'cups':
-        cereal.cups = change_to_column_type(col,value)
-    elif col == 'fat':
-        cereal.fat = change_to_column_type(col,value)
-    elif col == 'fiber':
-        cereal.fiber = change_to_column_type(col,value)
-    elif col == 'potass':
-        cereal.potass = change_to_column_type(col,value)
-    elif col == 'protein':
-        cereal.protein = change_to_column_type(col,value)
-    elif col == 'rating':
-        cereal.rating = change_to_column_type(col,value)
-    elif col == 'shelf':
-        cereal.shelf = change_to_column_type(col,value)
-    elif col == 'sodium':
-        cereal.sodium = change_to_column_type(col,value)
-    elif col == 'sugars':
-        cereal.sugars = change_to_column_type(col,value)
-    elif col == 'type':
-        cereal.type = change_to_column_type(col,value)
-    elif col == 'type':
-        if value in ALLOWED_TYPES:
+        elif col == 'calories':
+            cereal.calories = change_to_column_type(col,value)
+        elif col == 'carbo':
+            cereal.carbo = change_to_column_type(col,value)
+        elif col == 'cups':
+            cereal.cups = change_to_column_type(col,value)
+        elif col == 'fat':
+            cereal.fat = change_to_column_type(col,value)
+        elif col == 'fiber':
+            cereal.fiber = change_to_column_type(col,value)
+        elif col == 'potass':
+            cereal.potass = change_to_column_type(col,value)
+        elif col == 'protein':
+            cereal.protein = change_to_column_type(col,value)
+        elif col == 'rating':
+            cereal.rating = change_to_column_type(col,value)
+        elif col == 'shelf':
+            cereal.shelf = change_to_column_type(col,value)
+        elif col == 'sodium':
+            cereal.sodium = change_to_column_type(col,value)
+        elif col == 'sugars':
+            cereal.sugars = change_to_column_type(col,value)
+        elif col == 'type':
             cereal.type = change_to_column_type(col,value)
+        elif col == 'type':
+            cereal.type = change_to_column_type(col,value)
+        elif col == 'vitamins':
+            cereal.vitamins = change_to_column_type(col,value)
+        elif col == 'weight':
+            cereal.weight = change_to_column_type(col,value)
+        elif col == 'id':
+            #ID is immuteable
+            ValueError('Dont change ID')
         else:
-            ValueError('Invalid Type value')
-    elif col == 'vitamins':
-        cereal.vitamins = change_to_column_type(col,value)
-    elif col == 'weight':
-        cereal.weight = change_to_column_type(col,value)
-    elif col == 'id':
-        #ID is immuteable
-        ValueError('Dont change ID')
-    else:
-        raise ValueError('Invalid column')
+            raise ValueError('Invalid column')
+    except (KeyError,ValueError) as e:
+        raise e
+
+    
     
 
 def upload_file_func(file):
