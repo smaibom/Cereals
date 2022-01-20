@@ -22,8 +22,15 @@ def db_get_all_cereals_as_df():
 
 def db_get_id_cereal_as_df(id):
     """
-    Returns a dataframe based on a given SQL query. Is not sanatized
-    TODO: Change to query a specific ID with the model parameters
+    Returns a dataframe with cereal data of a given ID
+
+    args:
+        id: Integer value of the id of the cereal
+    returns:
+        Dataframe with the values of the given ID
+    throws:
+        LookupError: If id dosent exist in DB
+
     """
     try:
         cereal = Cereal.query.filter_by(id = id).first()
@@ -137,16 +144,19 @@ def db_get_cereal_imagepath(id):
     args:
         id: Integer value of the cereal id picture we are returning
     returns:
-        Filename string if the filename exist, None on DB failure or if picture dosent exist
+        Filename string if the filename exist, None on DB failure
+    throws:
+        LookupError: If picture entry dosent exist in DB
     """
     try:
         #Query for picture
         picture = CerealPicture.query.filter_by(cerealid=id).first()
 
         #Check if picture exists
-        if picture != None:
-            return picture.picturepath
-        return None
+        if picture == None:
+            raise LookupError('No entry for cerealpicture')
+
+        return picture.picturepath
     except sqlalchemy.exc.OperationalError:
         current_app.logger.critical('DB Error occured when getting cereal image')
 

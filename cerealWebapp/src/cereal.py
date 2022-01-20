@@ -28,24 +28,23 @@ def list_with_id(id):
     Get request function for listing specific cereals
     """
     #Get specific ID Cereal 
-    df = db_get_id_cereal_as_df(id)
-
-    #Check if id exists, if not we return user to list view
-    if df.empty:
+    try:
+        df = db_get_id_cereal_as_df(id)
+    except LookupError:
+        #If ID dosent exist
         flash('Requested cereal ID dosent exists')
         return redirect(url_for('cereal.list'))
     
     #Get image, if no imagepath is set we set to default image
-    dfImage = db_get_cereal_imagepath(id)
-    if dfImage:
-        image = url_for('static', filename = dfImage)
-    else:
+    try:
+        imagepath = db_get_cereal_imagepath(id)
+        image = url_for('static', filename = imagepath)
+    except LookupError:
+        #If imagepath dosent exist
         image = url_for('static', filename = 'default.png')
 
-    cerealdata = df.to_dict()
-
     #Pass data along to template
-    return render_template('cereal.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID, id = id, image = image)
+    return render_template('cereal.html', cereals = df.to_dict(), headers = CEREAL_HEADERS_WITH_ID, id = id, image = image)
 
 @cereal.route('/list/delete',methods = ["POST"])
 @login_required
@@ -55,11 +54,14 @@ def delete_with_id():
     requires login
     """
     #We get the ID from the post request and delete it and redirect back to list view
-    id = request.form.get('id')
-    if db_delete_cereal(id):
-        flash("Cereal deleted")
-    else:
-        flash("Cereal not deleted")
+    try:
+        id = request.form.get('id')
+        if db_delete_cereal(id):
+            flash("Cereal deleted")
+        else:
+            flash("Cereal not deleted")
+    except LookupError:
+        flash('cereal dosent exist')
     return redirect(url_for('cereal.list'))
 
 @cereal.route('/list',methods=['POST'])
@@ -119,10 +121,13 @@ def add_post():
     """
     Post request function for when user presses add on the add subpage on the webpage, requires login
     """
-    if db_add_cereal(request.form):
-        flash('Added cereal to DB')
-    else:
-        flash("Invalid input given for one or more fields")
+    try:
+        if db_add_cereal(request.form):
+            flash('Added cereal to DB')
+        else:
+            flash("Cereal not added to DB")
+    except ValueError:
+        flash('Invalid input given')
     return redirect(url_for('cereal.list'))
 
 
@@ -137,15 +142,13 @@ def update(id):
     id = id.split('?')
     id = int(id[0])
     #Get specific ID Cereal 
-    df = db_get_id_cereal_as_df(id)
-    #Get possible values of mfr/type
-
-    if df.empty:
+    try:
+        df = db_get_id_cereal_as_df(id)
+        return render_template('update.html', data = df.iloc[0].to_dict(), mfrvals = ALLOWED_MFR ,typevals = ALLOWED_TYPES)
+    except LookupError:
         flash("Update page for requested item dosent exist")
         return redirect(url_for('cereal.list'))
-    #Get headers and data from the dataframe and display on webpage
-    cerealdata =df.iloc[0].to_dict()
-    return render_template('update.html', data = cerealdata, mfrvals = ALLOWED_MFR ,typevals = ALLOWED_TYPES)
+
 
 @cereal.route('/list/update',methods = ['POST'])
 @login_required
@@ -172,7 +175,7 @@ def update_post():
 @login_required
 def upload_file():
     """
-    Post function for uploading file
+    Post function for uploading file, currently can upload a file with no attached cereal to it
     Requires login
     """
 
@@ -189,30 +192,35 @@ def upload_file():
         flash('No selected file')
         return redirect(url_for('cereal.list_with_id', id=int(id)))
     
+    #Upload file
+    try:
+        filename = upload_file_func(file)
+        current_app.logger.info('Picture %s uploaded' %filename)
+    except TypeError:
+        flash('File not allowed format')
+        return redirect(url_for('cereal.list_with_id', id=int(id)))
+
+    #Update DB with path to image
     try:
         picture = db_get_cereal_imagepath(id)
-        filename = upload_file_func(file)
-
-        #cereal has picture, update it
-        if picture:
-            if db_update_cereal_imagepath(id,filename):
-                flash('updated image successfully')
-            else:
-                flash('Image not updated')
-        #Picture dosent exist, add it
+        if db_update_cereal_imagepath(id,filename):
+            flash('updated image successfully')
         else:
+            flash('Image not updated')
+    #Check if picture exist
+    except LookupError:
+        try:
             if db_add_cereal_imagepath(id,filename):
                 flash('image added successfully')
             else:
                 flash('Image not updated')
-        current_app.logger.info('Picture %s uploaded' %filename)
-        return redirect(url_for('cereal.list_with_id', id=int(id)))
-    except LookupError:
-        flash('Cereal does not exist')
-        return redirect(url_for('cereal.list'))
-    except TypeError:
-        flash('File not allowed format')
-        return redirect(url_for('cereal.list_with_id', id=int(id)))
+        #Check if cereal the picture is added to exists
+        except LookupError:
+            flash('Cereal does not exist anymore')
+            return redirect(url_for('cereal.list'))
+    
+    return redirect(url_for('cereal.list_with_id', id=int(id)))
+
 
 @cereal.route('/import')
 def import_data():
