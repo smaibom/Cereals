@@ -1,9 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-import urllib
 from flask_login import LoginManager
 import logging
-from logging.config import dictConfig
 
 """
 The entry point for the flask webapp, initializes the database connection, login manager and imports the blueprints.
@@ -17,12 +15,12 @@ db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__, static_folder='static')
-    from .config import secret,dbstring
+    from .config import secret,db_uri
     #Create the PYODBC string for a MSSQL database
-    params = urllib.parse.quote_plus(dbstring)
+    
 
     #sqlalchemy database connection string and init of DB
-    app.config['SQLALCHEMY_DATABASE_URI'] = "mssql+pyodbc:///?odbc_connect=%s" % params
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
     app.config['SECRET_KEY'] = secret
 
     db.init_app(app)
@@ -56,15 +54,6 @@ def create_app():
     from .src.api import api as api_blueprint
     app.register_blueprint(api_blueprint)
 
-
-
-    app.add_url_rule(
-    "/uploads/<name>", endpoint="download_file", build_only=True
-    )
-    
-    app.add_url_rule(
-    "/list/<id>", endpoint="list_spec_cereal"
-    )
 
 
     return app
