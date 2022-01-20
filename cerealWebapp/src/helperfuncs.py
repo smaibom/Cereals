@@ -1,7 +1,8 @@
 import os
 from flask import current_app
 from werkzeug.utils import secure_filename
-from .constants import ALLOWED_EXTENSIONS, ALLOWED_VALUES
+from .constants import ALLOWED_VALUES
+
 
 """
 Helper functions used in multiple files go here
@@ -119,7 +120,7 @@ def get_cereal_value(cereal):
     
     
 
-def upload_file_func(file):
+def upload_file_func(file,allowed_extensions):
     """
     Checks if a file is of an allowed extension type and saves it to the static location
     args:
@@ -130,16 +131,16 @@ def upload_file_func(file):
         TypeError: If file extension is not allowed
     """
     
-    def allowed_file(filename):
+    def allowed_file(filename,allowed_extensions):
         return '.' in filename and \
-            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+            filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
-    if file and allowed_file(file.filename):
+    if file and allowed_file(file.filename,allowed_extensions):
         filename = secure_filename(file.filename)
-        file.save(os.path.join(current_app.static_folder, filename))
+        file.save(get_static_path(filename))
         return filename
     raise TypeError
 
 
-def check_filters(filters, vals):
-    min 
+def get_static_path(filename):
+    return os.path.join(current_app.static_folder, filename)

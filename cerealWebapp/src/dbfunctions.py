@@ -89,7 +89,6 @@ def db_add_cereal(input_dict):
     try:
         #Create new cereal object
         cereal = Cereal()
-        
         #Iterate over each column, value and add it to the cereal object
         for (col,val) in input_dict.items():
             set_cereal_value(col,val,cereal)
@@ -106,6 +105,32 @@ def db_add_cereal(input_dict):
 
     except ValueError:
         raise ValueError('Invalid input parameters')
+
+def db_bulk_add_cereal(cereals_list):
+    """
+    bulk add cereal to the DB
+    args:
+        cereals_list: a list of dictionaries of cereal items 
+    returns:
+        Integer value of how many cereals from set was uploaded
+    """
+    try:
+        number_uploaded = 0
+        for cereal_item in cereals_list:
+            try:
+                cereal = Cereal()
+                for (col,val) in cereal_item.items():
+                    set_cereal_value(col,val,cereal)
+                db.session.add(cereal)
+                number_uploaded += 1
+            except ValueError:
+                pass
+        db.session.commit()
+        current_app.logger.info('Added %d cereals to DB' % number_uploaded)
+        return number_uploaded
+    except sqlalchemy.exc.OperationalError:
+        current_app.logger.critical('DB Error occured when getting cereal image')
+        return 0
 
 
 def db_update_cereal(id,input_dict):

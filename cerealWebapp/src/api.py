@@ -98,13 +98,13 @@ def api_filter_cereals():
 @api.route('/api/cereals/getimage/<int:id>',methods = ['GET'])
 def api_get_image(id):
     """
-    GET request for getting a image, returns the image from a given id, and 404 on no file
+    GET request for getting a image, returns the image from a given id, and 204 on no file
     """
     try:
         filename = db_get_cereal_imagepath(id)
         return send_from_directory('static', path=filename, as_attachment=True), 200
     except LookupError:
-        return abort(404)
+        return "",204
         
 @api.route('/api/cereals/delete/<int:cid>',methods = ['DELETE'])
 @authApi.login_required

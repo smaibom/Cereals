@@ -4,9 +4,10 @@ from flask_login import login_required
 from werkzeug.utils import redirect
 from .. import db
 from .models import Cereal,CerealPicture
-from .helperfuncs import change_to_column_type, upload_file_func
-from .constants import ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID, FILTER_OPERATORS
-from .dbfunctions import db_add_cereal, db_add_cereal_imagepath, db_delete_cereal, db_get_all_cereals_as_df,  db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal, db_update_cereal_imagepath
+import pandas as pd
+from .helperfuncs import change_to_column_type, get_static_path, upload_file_func
+from .constants import ALLOWED_DATA_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS, ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID, FILTER_OPERATORS
+from .dbfunctions import db_add_cereal, db_add_cereal_imagepath, db_bulk_add_cereal, db_delete_cereal, db_get_all_cereals_as_df,  db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal, db_update_cereal_imagepath
 """
 Cereal blueprint functions are placed here
 """
@@ -194,7 +195,7 @@ def upload_file():
     
     #Upload file
     try:
-        filename = upload_file_func(file)
+        filename = upload_file_func(file,ALLOWED_IMAGE_EXTENSIONS)
         current_app.logger.info('Picture %s uploaded' %filename)
     except TypeError:
         flash('File not allowed format')
@@ -221,6 +222,40 @@ def upload_file():
     
     return redirect(url_for('cereal.list_with_id', id=int(id)))
 
+@cereal.route('/importcsv')
+@login_required
+def import_csv():
+    return render_template('uploadcsv.html')
+    
+
+@cereal.route('/importcsv', methods=['POST'])
+@login_required
+def import_csv_post():
+    if 'file' not in request.files:
+        flash('No file part')
+        return redirect(url_for('cereal.importcsv'))
+
+    file = request.files['file']
+    # If the user does not select a file, the browser submits an
+    # empty file without a filename.
+    if file.filename == '':
+        flash('No selected file')
+        return redirect(url_for('cereal.importcsv'))
+    #Upload file
+    try:
+        filename = upload_file_func(file,ALLOWED_DATA_EXTENSIONS)
+        current_app.logger.info('Uploaded %s for data import' %filename)
+    except TypeError:
+        flash('File not allowed format')
+        return redirect(url_for('cereal.importcsv'))
+    try:
+        filename = get_static_path(filename)
+        df = pd.read_csv(filename,usecols=CEREAL_HEADERS_WITHOUT_ID).to_dict('records')
+    except FileNotFoundError:
+        return "FILENOTFOUND"
+    amount_uploaded = db_bulk_add_cereal(df)
+    flash('Uploaded csv to DB, added %d cereals' %amount_uploaded)
+    return redirect(url_for('cereal.list'))
 
 @cereal.route('/import')
 def import_data():
@@ -237,4 +272,3 @@ def import_data():
 
         db.session.commit()
     return "correct"
-

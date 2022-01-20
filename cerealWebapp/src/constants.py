@@ -1,4 +1,5 @@
-ALLOWED_EXTENSIONS = {'jfif', 'png', 'jpg', 'jpeg'}
+ALLOWED_IMAGE_EXTENSIONS = {'jfif', 'png', 'jpg', 'jpeg'}
+ALLOWED_DATA_EXTENSIONS = {'csv'}
 ALLOWED_TYPES = {'C', 'H'}
 ALLOWED_MFR = {'Q','K','R','G','P','N','A'}
 CEREAL_HEADERS_WITH_ID = ['id', 'name', 'mfr', 'type', 'calories', 'protein', 'fat', 'sodium', 
