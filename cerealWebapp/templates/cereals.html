@@ -1,142 +1,143 @@
 <style>
-table {
-  font-family: arial, sans-serif;
-  border-collapse: collapse;
-  width: 100%;
-}
+    table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+    }
 
-td, th {
-  border: 1px solid #dddddd;
-  text-align: left;
-  padding: 8px;
-}
+    td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+    }
 
-tr:nth-child(even) {
-  background-color: #dddddd;
-}
+    tr:nth-child(even) {
+    background-color: #dddddd;
+    }
 
 
 
-a:hover, a:active {
-  background-color: red;
-}
+    a:hover, a:active {
+    background-color: red;
+    }
 
-select {
-    width: 20%;
-    height: 30pt;
-    text-align-last:center;
-}
+    select {
+        width: 20%;
+        height: 30pt;
+        text-align-last:center;
+    }
 </style>
 
 
 {% extends "base.html" %}
-
 {% block content %}
 
-{% with messages = get_flashed_messages() %}
-   {% if messages %}
-      {% for message in messages %}
-         {{ message }}
-      {% endfor %}
-   {% endif %}
-{% endwith %}
- 
-<table id="cerealTable" border="1" style="cursor: pointer;">
-    <tr class = "header">
-        {% for header in headers %}
-            <th> {{ header }} </th>
-        {% endfor %}
-    </tr>
-    {% for _, values in cereals.items() %}
-      {% for col, value in values.items() %}
-        {% if col == 'id' %}
-        <tr onclick="window.location='/list/{{ value }}';">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                {{ message }}
+            {% endfor %}
         {% endif %}
-                <td> {{ value }} </td>
+    {% endwith %}
+ 
+    <table id="cerealTable" border="1" style="cursor: pointer;">
+        <tr class = "header">
+            {% for header in headers %}
+                <th> {{ header }} </th>
+            {% endfor %}
+        </tr>
+        {% for _, values in cereals.items() %}
+        {% for col, value in values.items() %}
+            {% if col == 'id' %}
+            <tr onclick="window.location='/list/{{ value }}';">
+            {% endif %}
+                    <td> {{ value }} </td>
 
-      {% endfor %}
-      </tr>
-    {% endfor %}
-</table>
+        {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
 <br>
 <form method="POST" action="/list">
-  <ul id = 'filter'>
+    <ul id = 'filter'>
     {% if prevFilters %}
-      {% for (field,op,val) in prevFilters %}
-        <li>
-          <select name = field>
-            {% for header in headers %}
-              {% if header == field %}
-                <option value="{{header}}" selected>{{header}}</option>
-              {% else %}
-                <option value="{{header}}" >{{header}}</option>
-              {% endif %}
-            {% endfor %}'
-          </select>
-          <select name = op>
-            {% for (name,operator) in operators.items()%}
-              {% if name == op %}
-                <option value="{{name}}" selected>{{operator}}</option>
-              {% else %}
-                <option value="{{name}}" >{{operator}}</option>
-              {% endif %}
-            {% endfor %}'
-          </select>
-          <input type="text" name = value value = "{{val}}">
-        </li>
-      {% endfor %}
-  {% endif %}
-  </ul>
-  <button type="button" onclick="addRow({{headers}},{{operators}})" style="float: left;">Add Filter</button>
-  <button type="button" onclick="deleteRow()" style="float: left;">Delete last Filter</button>
-  <button class="button is-block is-info is-large is-fullwidth">Filter</button>
+        {% for (field,op,val) in prevFilters %}
+            <li>
+            <select name = field>
+                {% for header in headers %}
+                {% if header == field %}
+                    <option value="{{header}}" selected>{{header}}</option>
+                {% else %}
+                    <option value="{{header}}" >{{header}}</option>
+                {% endif %}
+                {% endfor %}'
+            </select>
+            <select name = op>
+                {% for (name,operator) in operators.items()%}
+                {% if name == op %}
+                    <option value="{{name}}" selected>{{operator}}</option>
+                {% else %}
+                    <option value="{{name}}" >{{operator}}</option>
+                {% endif %}
+                {% endfor %}'
+            </select>
+            <input type="text" name = value value = "{{val}}">
+            </li>
+        {% endfor %}
+    {% endif %}
+    </ul>
+    <button type="button" onclick="addRow({{headers}},{{operators}})" style="float: left;">Add Filter</button>
+    <button type="button" onclick="deleteRow()" style="float: left;">Delete last Filter</button>
+    <button class="button is-block is-info is-large is-fullwidth">Filter</button>
 </form>
+
+
 <script>
-  function addRow(headers,ops) {
-    var list = document.getElementById('filter');
-    var li = document.createElement("li");
+    function addRow(headers,ops) {
+        var list = document.getElementById('filter');
+        var li = document.createElement("li");
 
 
-    //Create the first selection box
-    var selectField = document.createElement("select");
-    selectField.name = "field"
-    for (var i = 0; i < headers.length; i++) {
-      var option = document.createElement("option");
-      option.value = headers[i];
-      option.text = headers[i];
-      selectField.appendChild(option);
+        //Create the first selection box
+        var selectField = document.createElement("select");
+        selectField.name = "field"
+        for (var i = 0; i < headers.length; i++) {
+            var option = document.createElement("option");
+            option.value = headers[i];
+            option.text = headers[i];
+            selectField.appendChild(option);
+        }
+        //add to the list entry
+        li.appendChild(selectField)
+
+        //Create second selection box
+        var selectOp = document.createElement("select");
+        selectOp.name = "op"
+        for (const [key, value] of Object.entries(ops)) {
+            var option = document.createElement("option");
+            option.value = key;
+            option.text = value;
+            selectOp.appendChild(option);
+        }
+        //Add to list entry
+        li.appendChild(selectOp)
+
+        var input = document.createElement("input");
+        input.name = "value"
+        li.appendChild(input)
+
+        list.appendChild(li)
     }
-    //add to the list entry
-    li.appendChild(selectField)
 
-    //Create second selection box
-    var selectOp = document.createElement("select");
-    selectOp.name = "op"
-    for (const [key, value] of Object.entries(ops)) {
-        var option = document.createElement("option");
-        option.value = key;
-        option.text = value;
-        selectOp.appendChild(option);
+    function deleteRow() {
+        var list = document.getElementById('filter');
+        //I dont know what is wrong here but this fixes it, the added list entries from the html wont be deleted otherwise, TODO: Look into this
+        console.log(list.lastChild.length)
+        if(list.lastChild.length > 0){
+            list.removeChild(list.lastChild)
+        }
+        list.removeChild(list.lastChild)
     }
-    //Add to list entry
-    li.appendChild(selectOp)
 
-    var input = document.createElement("input");
-    input.name = "value"
-    li.appendChild(input)
-
-    list.appendChild(li)
-  }
-
-  function deleteRow() {
-    var list = document.getElementById('filter');
-    //I dont know what is wrong here but this fixes it, the added list entries from the html wont be deleted otherwise, TODO: Look into this
-    console.log(list.lastChild.length)
-    if(list.lastChild.length > 0){
-      list.removeChild(list.lastChild)
-    }
-    list.removeChild(list.lastChild)
-  }
-
-  </script>
+    </script>
 {% endblock %}

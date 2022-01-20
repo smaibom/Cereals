@@ -1,60 +1,62 @@
 <style>
-table {
-  font-family: arial, sans-serif;
-  border-collapse: collapse;
-  width: 100%;
-}
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
 
-td, th {
-  border: 1px solid #dddddd;
-  text-align: left;
-  padding: 8px;
-}
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
 
-tr:nth-child(even) {
-  background-color: #dddddd;
-}
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
 
-
-a:hover, a:active {
-  background-color: red;
-}
+    a:hover, a:active {
+        background-color: red;
+    }
 </style>
-{% extends "base.html" %}
 
+{% extends "base.html" %}
 {% block content %}
 
-{% with messages = get_flashed_messages() %}
-   {% if messages %}
-      {% for message in messages %}
-         {{ message }}
-      {% endfor %}
-   {% endif %}
-{% endwith %}
-<table>
-    <tr class = "header">
-        {% for header in headers %}
-            <th> {{ header }}</th>
-        {% endfor %}
-    </tr>
-    {% for key, values in cereals.items() %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                {{ message }}
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <table>
+        <tr class = "header">
+            {% for header in headers %}
+                <th> {{ header }}</th>
+            {% endfor %}
+        </tr>
+        {% for key, values in cereals.items() %}
             {% for col, value in values.items() %}
                 <td> {{ value }} </td>
             {% endfor %}
-    {% endfor %}
+        {% endfor %}
+    </table>
 
-</table>
-{% if current_user.is_authenticated %}
-  <form method="POST" action="/list/delete">
-      <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Delete Cereal</button>
-  </form>
-  <form method="GET" action="/list/update/{{ id }}">
-    <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Update cereal</button>
-  </form>
-  <form method="POST" action= "/upload" enctype=multipart/form-data>
-    <input type=file name=file>
-    <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Upload cereal picture</button>
-  </form>
-{% endif %}
-<img src="{{ image }}">
+    {% if current_user.is_authenticated %}
+        <form method="POST" action="/list/delete">
+            <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Delete Cereal</button>
+        </form>
+
+        <form method="GET" action="/list/update/{{ id }}">
+            <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Update cereal</button>
+        </form>
+
+        <form method="POST" action= "/upload" enctype=multipart/form-data>
+            <input type=file name=file>
+            <button class="button is-block is-info is-large is-fullwidth" name = "id" value = "{{ id }}">Upload cereal picture</button>
+        </form>
+    {% endif %}
+    <img src="{{ image }}">
 {% endblock %}

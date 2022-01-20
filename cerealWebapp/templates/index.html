@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-
 {% block content %}
-<h1 class="title">
-  Cereal database
-</h1>
-<h2 class="subtitle">
-  Find your favorite (unhealthy) cereal!
-</h2>
-{% if current_user.is_authenticated %}
-<h2 class="subtitle">
-  hello {{ name }}
-</h2>
-{% endif %}
+
+    <h1 class="title">
+        Cereal database
+    </h1>
+    <h2 class="subtitle">
+        Find your favorite (unhealthy) cereal!
+    </h2>
+    {% if current_user.is_authenticated %}
+        <h2 class="subtitle">
+            hello {{ name }}
+        </h2>
+    {% endif %}
 {% endblock %}
