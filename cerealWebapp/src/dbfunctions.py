@@ -18,7 +18,9 @@ def db_get_all_cereals_as_df():
         df = pd.read_sql(sql, db.engine)
         return df
     except sqlalchemy.exc.OperationalError:
+        df = pd.DataFrame([],columns=CEREAL_HEADERS_WITH_ID)
         current_app.logger.critical('DB Error occured when getting cereal data')
+        return df
 
 def db_get_id_cereal_as_df(id):
     """

@@ -43,10 +43,10 @@ def api_get_cereal_id(id):
     Get request endpoint with specific id integer value that 
     returns cereal json of the specified id, if id dosent exist it returns nothing with 204 status code
     """
-    df = db_get_id_cereal_as_df(id)
-    if not df.empty:
+    try:
+        df = db_get_id_cereal_as_df(id)
         return (df.iloc[0].to_dict()), 200
-    else:
+    except LookupError:
         return "", 204
 
 @api.route('/api/cereals/filter',methods = ['GET'])
@@ -100,11 +100,10 @@ def api_get_image(id):
     """
     GET request for getting a image, returns the image from a given id, and 404 on no file
     """
-
-    filename = db_get_cereal_imagepath(id)
-    if filename:
+    try:
+        filename = db_get_cereal_imagepath(id)
         return send_from_directory('static', path=filename, as_attachment=True), 200
-    else:
+    except LookupError:
         return abort(404)
         
 @api.route('/api/cereals/delete/<int:cid>',methods = ['DELETE'])
