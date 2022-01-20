@@ -1,5 +1,7 @@
 from flask import current_app
-from .helperfuncs import set_cereal_value
+
+from .constants import CEREAL_HEADERS_WITH_ID
+from .helperfuncs import get_cereal_value, set_cereal_value
 from .. import db
 from .models import Cereal, CerealPicture
 import pandas as pd
@@ -25,9 +27,12 @@ def db_get_id_cereal_as_df(id):
     """
     try:
         cereal = Cereal.query.filter_by(id = id).first()
-        print(cereal.__table__.values)
-        sql = "SELECT * FROM cereal where id = %s" %id
-        df = pd.read_sql(sql, db.engine)
+        if not cereal:
+            raise LookupError('Id dosent exist')
+        
+        #Pandas rows is list of list, so changing it to be one
+        values = [get_cereal_value(cereal)]
+        df = pd.DataFrame(values,columns=CEREAL_HEADERS_WITH_ID)
         return df
     except sqlalchemy.exc.OperationalError:
         current_app.logger.critical('DB Error occured when getting cereal data')

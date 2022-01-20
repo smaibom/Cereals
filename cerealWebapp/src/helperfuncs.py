@@ -56,7 +56,7 @@ def set_cereal_value(col,value,cereal):
         value: String of the value
         cereal: Cereal object where the fields should be changed
     throws:
-        ValueError: if a value is incorrect datatype or column header dosent exist
+        ValueError: if a value is incorrect datatype or column header dosent exist or trying to alter id
     """
 
     #Set fields
@@ -89,8 +89,6 @@ def set_cereal_value(col,value,cereal):
             cereal.sugars = change_to_column_type(col,value)
         elif col == 'type':
             cereal.type = change_to_column_type(col,value)
-        elif col == 'type':
-            cereal.type = change_to_column_type(col,value)
         elif col == 'vitamins':
             cereal.vitamins = change_to_column_type(col,value)
         elif col == 'weight':
@@ -103,6 +101,21 @@ def set_cereal_value(col,value,cereal):
     except (KeyError,ValueError) as e:
         raise e
 
+def get_cereal_value(cereal):
+    """
+    Function that takes a cereal object and retrieves the fields.
+    args:
+        cereal: Cereal object
+    returns:
+        Array: Array of the cereal values, order is according to the constant CEREAL_HEADERS_WITH_ID
+    throws:
+        ValueError: if a value is incorrect datatype or column header dosent exist
+    """
+
+    values = [cereal.id, cereal.name, cereal.mfr, cereal.type, cereal.calories, cereal.protein,
+              cereal.fat,cereal.sodium, cereal.fiber, cereal.carbo, cereal.sugars, cereal.potass, 
+              cereal.vitamins, cereal.shelf, cereal.weight, cereal.cups, cereal.rating]
+    return values
     
     
 
@@ -126,3 +139,7 @@ def upload_file_func(file):
         file.save(os.path.join(current_app.static_folder, filename))
         return filename
     raise TypeError
+
+
+def check_filters(filters, vals):
+    min 

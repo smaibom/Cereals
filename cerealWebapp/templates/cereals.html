@@ -11,6 +11,9 @@ td, th {
   padding: 8px;
 }
 
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
 
 
 
@@ -41,7 +44,7 @@ select {
 <table id="cerealTable" border="1" style="cursor: pointer;">
     <tr class = "header">
         {% for header in headers %}
-            <th onclick ="testFunc('{{header}}')"> {{ header }} </th>
+            <th> {{ header }} </th>
         {% endfor %}
     </tr>
     {% for _, values in cereals.items() %}
@@ -128,7 +131,8 @@ select {
   function deleteRow() {
     var list = document.getElementById('filter');
     //I dont know what is wrong here but this fixes it, the added list entries from the html wont be deleted otherwise, TODO: Look into this
-    if(list.lastChild.length == 13){
+    console.log(list.lastChild.length)
+    if(list.lastChild.length > 0){
       list.removeChild(list.lastChild)
     }
     list.removeChild(list.lastChild)

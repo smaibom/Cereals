@@ -28,7 +28,6 @@ def list_with_id(id):
     Get request function for listing specific cereals
     """
     #Get specific ID Cereal 
-    sql = "SELECT * FROM cereal WHERE id = %s" %id
     df = db_get_id_cereal_as_df(id)
 
     #Check if id exists, if not we return user to list view
@@ -138,18 +137,15 @@ def update(id):
     id = id.split('?')
     id = int(id[0])
     #Get specific ID Cereal 
-    sql = "SELECT * FROM cereal WHERE id = %d" % id
-    df = db_get_all_cereals_as_df(sql)
+    df = db_get_id_cereal_as_df(id)
     #Get possible values of mfr/type
-    mfrVals = ALLOWED_MFR
-    typeVals = ALLOWED_TYPES
 
     if df.empty:
         flash("Update page for requested item dosent exist")
         return redirect(url_for('cereal.list'))
     #Get headers and data from the dataframe and display on webpage
     cerealdata =df.iloc[0].to_dict()
-    return render_template('update.html', data = cerealdata, mfrvals = mfrVals,typevals = typeVals)
+    return render_template('update.html', data = cerealdata, mfrvals = ALLOWED_MFR ,typevals = ALLOWED_TYPES)
 
 @cereal.route('/list/update',methods = ['POST'])
 @login_required
