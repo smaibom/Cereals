@@ -129,6 +129,7 @@ def add_post():
             flash("Cereal not added to DB")
     except ValueError:
         flash('Invalid input given')
+        return redirect(url_for('cereal.add_post'))
     return redirect(url_for('cereal.list'))
 
 
@@ -165,6 +166,7 @@ def update_post():
             flash("%s successfully updated" % id)
     except ValueError:
         flash("Input error on one or more fields")
+        return redirect(url_for('cereal.update',id = '%s?' % id))
     except KeyError:
         #Tried to set a column that dosent exist
         pass
@@ -233,26 +235,27 @@ def import_csv():
 def import_csv_post():
     if 'file' not in request.files:
         flash('No file part')
-        return redirect(url_for('cereal.importcsv'))
+        return redirect(url_for('cereal.import_csv'))
 
     file = request.files['file']
     # If the user does not select a file, the browser submits an
     # empty file without a filename.
     if file.filename == '':
         flash('No selected file')
-        return redirect(url_for('cereal.importcsv'))
+        return redirect(url_for('cereal.import_csv'))
     #Upload file
     try:
         filename = upload_file_func(file,ALLOWED_DATA_EXTENSIONS)
         current_app.logger.info('Uploaded %s for data import' %filename)
     except TypeError:
         flash('File not allowed format')
-        return redirect(url_for('cereal.importcsv'))
+        return redirect(url_for('cereal.import_csv'))
     try:
         filename = get_static_path(filename)
         df = pd.read_csv(filename,usecols=CEREAL_HEADERS_WITHOUT_ID).to_dict('records')
     except FileNotFoundError:
-        return "FILENOTFOUND"
+        flash('error reading file')
+        return redirect(url_for('cereal.import_csv'))
     amount_uploaded = db_bulk_add_cereal(df)
     flash('Uploaded csv to DB, added %d cereals' %amount_uploaded)
     return redirect(url_for('cereal.list'))

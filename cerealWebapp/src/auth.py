@@ -53,6 +53,7 @@ def signup_post():
     #Check if user exist already, if so redirect user back to signup page to try again
     user = User.query.filter_by(name=name).first()
     if user: 
+        flash('Name already in use')
         return redirect(url_for('auth.signup'))
 
     #New user created, added to DB and redirect to login
