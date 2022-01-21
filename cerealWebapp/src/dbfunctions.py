@@ -1,8 +1,9 @@
 from flask import current_app
 from .constants import CEREAL_HEADERS_WITH_ID
+
 from .helperfuncs import get_cereal_value, set_cereal_value
 from .. import db
-from .models import Cereal, CerealPicture
+from .models import Cereal, CerealPicture, User
 import pandas as pd
 import sqlalchemy
 """
@@ -252,3 +253,4 @@ def db_update_cereal_imagepath(cereal_id,filename):
     except sqlalchemy.exc.OperationalError:
         current_app.logger.critical('DB Error occured when updating cereal image')
         return False
+

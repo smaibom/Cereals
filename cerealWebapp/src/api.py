@@ -1,13 +1,10 @@
-from flask import Blueprint, request,jsonify,abort,current_app
+from flask import Blueprint, request,jsonify,current_app
 from flask.helpers import send_from_directory
-from werkzeug.security import check_password_hash
-from .dbfunctions import db_add_cereal, db_delete_cereal, db_get_all_cereals_as_df, db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal
-import pandas as pd
-from .models import Cereal
+from .authdbfunctions import check_user
+from .dbfunctions import  db_add_cereal, db_delete_cereal, db_get_all_cereals_as_df, db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal
 from .helperfuncs import change_to_column_type
 from flask_httpauth import HTTPBasicAuth
 import re
-from .models import User
 from .filterfunctions import filter_cereals
 
 """
@@ -17,17 +14,15 @@ API blueprint file, all functions related to the /api/ part of the webpage are p
 api = Blueprint('api', __name__)
 
 
+
 authApi = HTTPBasicAuth()
 @authApi.verify_password
 def verify_password(username, password):
     """
     Using httpbasicauth as the normal login system does not work for the api request part. Checks if the user exist in database and the password is correct.
     """
-    user = User.query.filter_by(name=username).first()
-    if user and check_password_hash(user.pwd, password):
-        current_app.logger.info('%s successfully authenticated on api' % username)
-        return username
-    current_app.logger.info('%s failed to authenticated on api' % username)
+    return check_user(username,password)
+
 
 
 @api.route('/api/cereals/',methods = ['GET'])

@@ -1,5 +1,8 @@
 from .errors import FilterError, OperatorNotFoundError
 
+"""
+Functions for filtering goes here, contains functions for basic filtering and validation if a list of filters can produce a result
+"""
 
 def check_valid_filter_numbers(filter,value,args):
     """
