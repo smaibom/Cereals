@@ -2,10 +2,12 @@ from flask import Blueprint, render_template, request,flash,current_app
 from flask.helpers import url_for
 from flask_login import login_required
 from werkzeug.utils import redirect
+
+from .errors import FilterError
 from .. import db
 from .models import Cereal,CerealPicture
 import pandas as pd
-from .helperfuncs import change_to_column_type, get_static_path, upload_file_func
+from .helperfuncs import change_to_column_type, choose_filter_type, get_static_path, upload_file_func
 from .constants import ALLOWED_DATA_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS, ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID, FILTER_OPERATORS
 from .dbfunctions import db_add_cereal, db_add_cereal_imagepath, db_bulk_add_cereal, db_delete_cereal, db_get_all_cereals_as_df,  db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal, db_update_cereal_imagepath
 """
@@ -79,12 +81,29 @@ def filter():
 
     df = db_get_all_cereals_as_df()
     prevFilters = []
+    filters = dict()
     try:
         #Make value into correct datatype for filtering
         for i in range(len(field)):
             curField = field[i]
             curValue = change_to_column_type(curField,value[i])
             curOp = op[i]
+            
+            if curField in filters:
+                args = filters[curField]
+            else:
+                if type(curValue) == int or type(curValue) == float:
+                    col_number = df.columns.get_loc(curField) 
+                    min_val = df.iloc[:,col_number].min()
+                    max_val = df.iloc[:,col_number].max()
+                    not_allowed = []
+                    args = [min_val,max_val,not_allowed]
+                else:
+                    allowed = ''
+                    not_allowed = []
+                    args = [allowed,not_allowed]
+            filters[curField] = choose_filter_type(curField,args,curOp,curValue)
+            
             prevFilters.append((curField,curOp,curValue))
             if curOp == 'eq':
                 df = df.loc[df[curField] == curValue] 
@@ -100,6 +119,9 @@ def filter():
                 df = df.loc[df[curField] >= curValue] 
         cerealdata =df.to_dict('index')
         return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID,  operators = FILTER_OPERATORS, prevFilters = prevFilters)
+    except FilterError:
+        flash('Filters would never give a result')
+        return redirect(url_for('cereal.list'))
     except:
         flash('invalid filter input given')
         return redirect(url_for('cereal.list'))

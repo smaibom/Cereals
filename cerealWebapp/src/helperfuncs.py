@@ -1,6 +1,8 @@
 import os
 from flask import current_app
 from werkzeug.utils import secure_filename
+
+from .errors import FilterError
 from .constants import ALLOWED_VALUES
 
 
@@ -143,4 +145,94 @@ def upload_file_func(file,allowed_extensions):
 
 
 def get_static_path(filename):
+    """
+    Returns the filepath for a given
+    """
     return os.path.join(current_app.static_folder, filename)
+
+def check_valid_filter_numbers(filter,value,args):
+    """
+    Function that checks if a number is reachable given a filter
+    args:
+        filter: string of the filter being checked
+        value: value of the filter
+        args: List of [min_val(number),max_val(number),not_allowed(List of number not allowed)]
+    returns:
+        Updated list of args
+    throws:
+        FilterError: If the filter will not result in any results in the given range of numbers
+    """
+    min_val = args[0]
+    max_val = args[1]
+    not_allowed = args[2]
+    if filter == 'less':
+        max_val = value-1
+    if filter == 'lesseq':
+        max_val = value
+    elif filter == 'greater':
+        min_val = value+1
+    elif filter == 'greatereq':
+        min_val = value
+    elif filter == 'eq':
+        if value >= min_val and value <= max_val:
+            min_val = value
+            max_val = value
+        else:
+            raise FilterError()
+    elif filter == 'noteq':
+        not_allowed.append(value)
+    if min_val > max_val:
+        raise FilterError()
+    for i in range(min_val,max_val+1):
+        if i not in not_allowed:
+            return [min_val,max_val,not_allowed]
+    raise FilterError()
+
+def check_valid_filter_strings(filter,value,args):
+    """
+    Function that checks if a string is reachable given a filter
+    args:
+        filter: string of the filter being checked
+        value: value of the filter
+        args: List of [allowed(string),not_allowed(List of strings not allowed)]
+    returns:
+        Updated list of args
+    throws:
+        FilterError: If the filter will not result in any results in the given string arguments
+    """
+    allowed = args[0]
+    not_allowed = args[1]
+    if filter == 'eq':
+        if value in not_allowed or allowed != '':
+            raise FilterError()
+        allowed = value
+    elif filter == 'noteq':
+        if allowed == value:
+            raise FilterError()
+        not_allowed.append(value)
+    return [allowed,not_allowed]
+
+
+def check_valid_filter(column_name,args,filter,value):
+    """
+    Function that checks if a filter will compute given a set of allowed input
+    args:
+        column_name: String of the name of the column name, must be one in CEREAL_HEADERS_WITH_ID
+        args: List of arguments, 
+            for ints and floats its [min_val(integer),max_val(integer),not_allowed(list of integers not allowed)]
+            for strings its [allowed(string),not_allowed(list of strings)]
+        filter: string of the filter type
+        value: value of the filter being checked towards
+    returns:
+        List of updated arg arguments of same type as args
+    throws:
+        FilterError: If filter cant be run
+    """
+    column_types = {'name' : check_valid_filter_strings, 'mfr' : check_valid_filter_strings, 'calories' : check_valid_filter_numbers, 'carbo' : check_valid_filter_strings, 
+                            'cups' : check_valid_filter_numbers, 'fat' : check_valid_filter_numbers, 'fiber' : check_valid_filter_numbers, 'potass' : check_valid_filter_numbers, 
+                            'protein' : check_valid_filter_numbers, 'rating' : check_valid_filter_numbers, 'shelf' : check_valid_filter_numbers, 'sodium' : check_valid_filter_numbers, 
+                            'sugars' : check_valid_filter_numbers, 'type' : check_valid_filter_numbers, 'vitamins' : check_valid_filter_numbers, 'weight' : check_valid_filter_numbers,
+                            'id' : check_valid_filter_numbers}
+    func = column_types[column_name]
+    return func(filter,value,args)
+
