@@ -1,14 +1,23 @@
 from flask import Blueprint, render_template, redirect,url_for, request,flash, current_app
-
 from .authdbfunctions import check_user, gen_user, get_user
 from werkzeug.security import generate_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
+from flask_httpauth import HTTPBasicAuth
 
 """
 Blueprint for functions related to login and creating users. This file holds the 
 """
 
 auth = Blueprint('auth', __name__)
+
+auth_api = HTTPBasicAuth()
+@auth_api.verify_password
+def verify_password(username, password):
+    """
+    Using httpbasicauth as the normal login system does not work for the api request part. Checks if the user exist in database and the password is correct.
+    """
+    return check_user(username,password)
+
 
 @auth.route('/login')
 def login():

@@ -1,7 +1,7 @@
 from flask import current_app
 from .models import User
 from .. import db
-from werkzeug.security import check_password_hash,generate_password_hash
+from werkzeug.security import check_password_hash
 
 def check_user(username,password):
     user = User.query.filter_by(name=username).first()

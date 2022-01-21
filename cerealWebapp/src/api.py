@@ -1,29 +1,16 @@
-from flask import Blueprint, request,jsonify,current_app
+from flask import Blueprint, request,jsonify
 from flask.helpers import send_from_directory
-from .authdbfunctions import check_user
 from .dbfunctions import  db_add_cereal, db_delete_cereal, db_get_all_cereals_as_df, db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal
 from .helperfuncs import change_to_column_type
-from flask_httpauth import HTTPBasicAuth
 import re
 from .filterfunctions import filter_cereals
+from .auth import auth_api
 
 """
 API blueprint file, all functions related to the /api/ part of the webpage are placed in this file.
 """
 
 api = Blueprint('api', __name__)
-
-
-
-authApi = HTTPBasicAuth()
-@authApi.verify_password
-def verify_password(username, password):
-    """
-    Using httpbasicauth as the normal login system does not work for the api request part. Checks if the user exist in database and the password is correct.
-    """
-    return check_user(username,password)
-
-
 
 @api.route('/api/cereals/',methods = ['GET'])
 def api_get_all_cereals():
@@ -94,7 +81,7 @@ def api_get_image(id):
         return "",204
         
 @api.route('/api/cereals/delete/<int:cid>',methods = ['DELETE'])
-@authApi.login_required
+@auth_api.login_required
 def api_delete_cereals(cid):
     """
     DELETE request, deletes the given ID. Returns 200 on success and 204 if invalid ID. Requires user auth
@@ -111,7 +98,7 @@ def api_delete_cereals(cid):
 
 
 @api.route('/api/cereals/add/', methods=['POST'])
-@authApi.login_required
+@auth_api.login_required
 def api_add_cereal():
     """
     POST request to add cereal to the database, the post data is a json containing the various fields of a cereal and their values.
@@ -131,7 +118,7 @@ def api_add_cereal():
 
    
 @api.route('/api/cereals/add/<int:id>', methods=['PUT'])
-@authApi.login_required
+@auth_api.login_required
 def api_update_cereal(id):
     """
     POST request to update cereal to the database, if the id exist the cereal is updated with the new values. If the id dosent exist an error is given

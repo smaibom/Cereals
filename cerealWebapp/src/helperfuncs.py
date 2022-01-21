@@ -2,7 +2,6 @@ import os
 from flask import current_app
 from werkzeug.utils import secure_filename
 
-from .errors import FilterError
 from .constants import ALLOWED_VALUES
 
 
