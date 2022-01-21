@@ -8,6 +8,7 @@ from .helperfuncs import change_to_column_type
 from flask_httpauth import HTTPBasicAuth
 import re
 from .models import User
+from .filterfunctions import filter_cereals
 
 """
 API blueprint file, all functions related to the /api/ part of the webpage are placed in this file.
@@ -61,38 +62,29 @@ def api_filter_cereals():
     #Checks for the pattern "<>!=" as the first char and an optional = afterwards and stores is in group 1. While == is accepted there is not a valid request
     #The second part checks for any word pattern to follow and is stored in group 2
     prog = re.compile(r'([<>!=]=?)([ -%,.\w]+)')
-    
+
     #Get arguments
     filters = request.args
-    df = db_get_all_cereals_as_df()
-
     try:
+        #List of tuples (column,operator,value)
+        args = []
+        #Package the args for the filter function
         for (col,val) in filters.items():
-            #Match the result get the 2 groups 
             res = prog.match(val)
             op = res.group(1)
             value = res.group(2)
+
             #Translate the value to its proper type to make it compatable for pandas function
             value = change_to_column_type(col,value)
-            if op == '<':
-                df = df.loc[df[col] < value] 
-            elif op == '>':
-                df = df.loc[df[col] > value] 
-            elif op == '<=':
-                df = df.loc[df[col] <= value] 
-            elif op == '>=':
-                df = df.loc[df[col] >= value] 
-            elif op == '!=':
-                df = df.loc[df[col] != value] 
-            elif op == '=':
-                df = df.loc[df[col] == value] 
-            #The regex accepts it but technically not considered a valid request
-            elif op == '==':
-                return "", 400
-            if df.empty:
-                return "", 204
+            args.append((col,op,value))
+
+        #Arguments are valid pass them create DF and pass to filter function
+        df = db_get_all_cereals_as_df()
+        df = filter_cereals(df,args)
+        if df.empty:
+            return "", 204
         return jsonify(df.to_dict('index')), 200
-    except Exception as e:
+    except:
         return "", 400
 
 @api.route('/api/cereals/getimage/<int:id>',methods = ['GET'])

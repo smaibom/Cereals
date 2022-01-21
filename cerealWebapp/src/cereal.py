@@ -3,6 +3,8 @@ from flask.helpers import url_for
 from flask_login import login_required
 from werkzeug.utils import redirect
 
+from .filterfunctions import filter_cereals
+
 from .errors import FilterError
 from .. import db
 from .models import Cereal,CerealPicture
@@ -74,60 +76,29 @@ def filter():
     displays the list of cereal based on the given filter
     """
     #Get user input
-    field = request.form.getlist('field')
+    column = request.form.getlist('field')
     op = request.form.getlist('op')
     value = request.form.getlist('value')
     #Get entire cereals
 
-    df = db_get_all_cereals_as_df()
-    prevFilters = []
-    filters = dict()
+    #TODO: Fix html filter stuff
+    filter_args = []
+    prev_filters = []
     try:
-        #Make value into correct datatype for filtering
-        for i in range(len(field)):
-            curField = field[i]
-            curValue = change_to_column_type(curField,value[i])
-            curOp = op[i]
-            prevFilters.append((curField,curOp,curValue))
-            curOp = FILTER_OPERATORS[curOp]
-
+        #Package arguments for filter function
+        for i in range(len(column)):
+            cur_column = column[i]
+            cur_value = change_to_column_type(cur_column,value[i])
+            cur_op = op[i]
+            prev_filters.append((cur_column,cur_op,cur_value))
             
-            #Check for if filters can produce a result for the user
-            if curField in filters:
-                args = filters[curField]
-            else:
-                #If a filter for a given column havent been encounted yet we create the args for the function
-                if type(curValue) == int or type(curValue) == float:
-                    #Set initial min,max vals.
-                    min_val = 0
-                    max_val = float('inf')
-                    not_allowed = []
-                    #Package the arguments to an argument array
-                    args = [min_val,max_val,not_allowed]
-                else:
-                    #Set initial allowed to nothing
-                    allowed = ''
-                    not_allowed = []
-                    #Package the arguments to an argument array
-                    args = [allowed,not_allowed]
-
-            filters[curField] = check_valid_filter(curField,args,curOp,curValue)
-            
-            if curOp == '=':
-                df = df.loc[df[curField] == curValue] 
-            elif curOp == '!=':
-                df = df.loc[df[curField] != curValue]   
-            elif curOp == '>':
-                df = df.loc[df[curField] > curValue] 
-            elif curOp == '<':
-                df = df.loc[df[curField] < curValue] 
-            elif curOp == '<=':
-                df = df.loc[df[curField] <= curValue] 
-            elif curOp == '>=':
-                df = df.loc[df[curField] >= curValue] 
-            
+            #Gotta package the filter operator from a string name to the operand like =
+            cur_op = FILTER_OPERATORS[cur_op]
+            filter_args.append((cur_column,cur_op,cur_value))
+        df = db_get_all_cereals_as_df()
+        df = filter_cereals(df,filter_args)
         cerealdata =df.to_dict('index')
-        return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID,  operators = FILTER_OPERATORS, prevFilters = prevFilters)
+        return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID,  operators = FILTER_OPERATORS, prevFilters = prev_filters)
     except FilterError:
         flash('Filters would never give a result')
         return redirect(url_for('cereal.list'))
