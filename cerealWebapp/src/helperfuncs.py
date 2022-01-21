@@ -165,27 +165,29 @@ def check_valid_filter_numbers(filter,value,args):
     min_val = args[0]
     max_val = args[1]
     not_allowed = args[2]
-    if filter == 'less':
-        max_val = value-1
-    if filter == 'lesseq':
-        max_val = value
-    elif filter == 'greater':
-        min_val = value+1
-    elif filter == 'greatereq':
-        min_val = value
-    elif filter == 'eq':
+    if filter == '<':
+        max_val = min(value-1,max_val)
+    if filter == '<=':
+        max_val = min(value,max_val)
+    elif filter == '>':
+        min_val = max(value+1,min_val)
+    elif filter == '>=':
+        min_val = max(value,max_val)
+    elif filter == '=':
         if value >= min_val and value <= max_val:
             min_val = value
             max_val = value
         else:
             raise FilterError()
-    elif filter == 'noteq':
+    elif filter == '!=':
         not_allowed.append(value)
     if min_val > max_val:
         raise FilterError()
-    for i in range(min_val,max_val+1):
+    i = min_val
+    while i <= max_val:
         if i not in not_allowed:
             return [min_val,max_val,not_allowed]
+        i += 1
     raise FilterError()
 
 def check_valid_filter_strings(filter,value,args):
@@ -202,11 +204,11 @@ def check_valid_filter_strings(filter,value,args):
     """
     allowed = args[0]
     not_allowed = args[1]
-    if filter == 'eq':
+    if filter == '=':
         if value in not_allowed or allowed != '':
             raise FilterError()
         allowed = value
-    elif filter == 'noteq':
+    elif filter == '!=':
         if allowed == value:
             raise FilterError()
         not_allowed.append(value)

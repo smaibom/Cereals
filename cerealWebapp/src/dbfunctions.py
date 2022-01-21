@@ -1,11 +1,14 @@
 from flask import current_app
-
 from .constants import CEREAL_HEADERS_WITH_ID
 from .helperfuncs import get_cereal_value, set_cereal_value
 from .. import db
 from .models import Cereal, CerealPicture
 import pandas as pd
 import sqlalchemy
+"""
+File for all database functions
+"""
+
 
 def db_get_all_cereals_as_df():
     """
