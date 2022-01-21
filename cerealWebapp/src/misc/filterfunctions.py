@@ -1,4 +1,4 @@
-from .errors import FilterError, OperatorNotFoundError
+from ..errors import FilterError, OperatorNotFoundError
 
 """
 Functions for filtering goes here, contains functions for basic filtering and validation if a list of filters can produce a result

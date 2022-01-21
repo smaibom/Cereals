@@ -1,8 +1,8 @@
 from flask import current_app
-from .constants import CEREAL_HEADERS_WITH_ID
-from .helperfuncs import get_cereal_value, set_cereal_value
-from .. import db
-from .models import Cereal, CerealPicture
+from ..constants import CEREAL_HEADERS_WITH_ID
+from ..misc.helperfuncs import get_cereal_value, set_cereal_value
+from ... import db
+from ..db.models import Cereal, CerealPicture
 import pandas as pd
 import sqlalchemy
 """

@@ -35,7 +35,6 @@ def create_app():
         return User.query.get(int(user_id))
 
     logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
-    """
 
     # Import blueprints for subsections of the page
     #Auth pages
@@ -44,16 +43,15 @@ def create_app():
     app.register_blueprint(auth_blueprint)
 
     #Front page
-    from .src.main import main as main_blueprint
+    from .src.webpage.main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
     #Cereal sub pages
-    from .src.cereal import cereal as cereal_blueprint
+    from .src.webpage.cereal import cereal as cereal_blueprint
     app.register_blueprint(cereal_blueprint)
     #API no pages
     from .src.api.api import api as api_blueprint
     app.register_blueprint(api_blueprint)
-    """
 
 
 
