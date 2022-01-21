@@ -1,10 +1,10 @@
 from flask import Blueprint, request,jsonify
 from flask.helpers import send_from_directory
-from .dbfunctions import  db_add_cereal, db_delete_cereal, db_get_all_cereals_as_df, db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal
-from .helperfuncs import change_to_column_type
+from ..dbfunctions import  db_add_cereal, db_delete_cereal, db_get_all_cereals_as_df, db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal
+from ..helperfuncs import change_to_column_type
 import re
-from .filterfunctions import filter_cereals
-from .auth import auth_api
+from ..filterfunctions import filter_cereals
+from ..auth import auth_api
 
 """
 API blueprint file, all functions related to the /api/ part of the webpage are placed in this file.

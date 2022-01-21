@@ -29,17 +29,18 @@ def create_app():
     login_manager = LoginManager()
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
-
-    from .src.models import User
+    from .src.db.models import User
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
     logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+    """
 
     # Import blueprints for subsections of the page
     #Auth pages
-    from .src.auth import auth as auth_blueprint
+
+    from .src.auth.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint)
 
     #Front page
@@ -49,10 +50,10 @@ def create_app():
     #Cereal sub pages
     from .src.cereal import cereal as cereal_blueprint
     app.register_blueprint(cereal_blueprint)
-
     #API no pages
-    from .src.api import api as api_blueprint
+    from .src.api.api import api as api_blueprint
     app.register_blueprint(api_blueprint)
+    """
 
 
 

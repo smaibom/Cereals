@@ -4,7 +4,7 @@ from flask_login import login_required
 from werkzeug.utils import redirect
 from .filterfunctions import check_valid_filters, filter_cereals
 from .. import db
-from .models import Cereal,CerealPicture
+from .db.models import Cereal,CerealPicture
 import pandas as pd
 from .helperfuncs import change_to_column_type, get_static_path, upload_file_func
 from .constants import ALLOWED_DATA_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS, ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID, FILTER_OPERATORS

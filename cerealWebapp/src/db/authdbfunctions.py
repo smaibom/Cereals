@@ -1,6 +1,6 @@
 from flask import current_app
 from .models import User
-from .. import db
+from ... import db
 from werkzeug.security import check_password_hash
 
 def check_user(username,password):

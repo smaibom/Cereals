@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect,url_for, request,flash, current_app
-from .authdbfunctions import check_user, gen_user, get_user
+from ..db.authdbfunctions import check_user, gen_user, get_user
 from werkzeug.security import generate_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
 from flask_httpauth import HTTPBasicAuth
