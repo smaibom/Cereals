@@ -2,14 +2,11 @@ from flask import Blueprint, render_template, request,flash,current_app
 from flask.helpers import url_for
 from flask_login import login_required
 from werkzeug.utils import redirect
-
-from .filterfunctions import filter_cereals
-
-from .errors import FilterError
+from .filterfunctions import check_valid_filters, filter_cereals
 from .. import db
 from .models import Cereal,CerealPicture
 import pandas as pd
-from .helperfuncs import change_to_column_type, check_valid_filter, get_static_path, upload_file_func
+from .helperfuncs import change_to_column_type, get_static_path, upload_file_func
 from .constants import ALLOWED_DATA_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS, ALLOWED_MFR, ALLOWED_TYPES, CEREAL_HEADERS_WITH_ID, CEREAL_HEADERS_WITHOUT_ID, FILTER_OPERATORS
 from .dbfunctions import db_add_cereal, db_add_cereal_imagepath, db_bulk_add_cereal, db_delete_cereal, db_get_all_cereals_as_df,  db_get_cereal_imagepath, db_get_id_cereal_as_df, db_update_cereal, db_update_cereal_imagepath
 """
@@ -95,13 +92,14 @@ def filter():
             #Gotta package the filter operator from a string name to the operand like =
             cur_op = FILTER_OPERATORS[cur_op]
             filter_args.append((cur_column,cur_op,cur_value))
-        df = db_get_all_cereals_as_df()
-        df = filter_cereals(df,filter_args)
-        cerealdata =df.to_dict('index')
-        return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID,  operators = FILTER_OPERATORS, prevFilters = prev_filters)
-    except FilterError:
-        flash('Filters would never give a result')
-        return redirect(url_for('cereal.list'))
+        if check_valid_filters(filter_args):
+            df = db_get_all_cereals_as_df()
+            df = filter_cereals(df,filter_args)
+            cerealdata =df.to_dict('index')
+            return render_template('cereals.html', cereals = cerealdata, headers = CEREAL_HEADERS_WITH_ID,  operators = FILTER_OPERATORS, prevFilters = prev_filters)
+        else:
+            flash('Filters would never give a result')
+            return redirect(url_for('cereal.list'))
     except Exception as e:
         flash('invalid filter input given')
         print(e)

@@ -90,7 +90,43 @@ def check_valid_filter(column_name,args,filter,value):
     return func(filter,value,args)
 
 def check_valid_filters(args):
-    pass
+    """
+    Checks if a list of filters can produce a result in any circumstance. This is not relative to a dataset and used to check if a result could be found
+    args:
+        args: List of tuples with 
+            column: String of the name of the column being filtered
+            op: String of the operator for the filter, must be in FILTER_OPERATORS
+            value: Value for the filter 
+    returns:
+        True if a result could be found after filtering
+        False if no result could ever be found for one or more columns
+    """
+    filters = dict()
+    try:
+        for (column,op,value) in args:
+            #Check for if filter for a column has been encountered before
+            if column in filters:
+                args = filters[column]
+            else:
+                #If a filter for a given column havent been encounted yet we create the args for the function
+                if type(value) == int or type(value) == float:
+                    #Set initial min,max vals.
+                    min_val = 0
+                    max_val = float('inf')
+                    not_allowed = []
+                    #Package the arguments to an argument array
+                    args = [min_val,max_val,not_allowed]
+                else:
+                    #Set initial allowed to nothing
+                    allowed = ''
+                    not_allowed = []
+                    #Package the arguments to an argument array
+                    args = [allowed,not_allowed]
+            filters[column] = check_valid_filter(column,args,op,value)
+        return True
+    except FilterError:
+        return False
+
 
 def filter_cereals(df,args):
     """
@@ -124,24 +160,3 @@ def filter_cereals(df,args):
     return df
 
 
-"""    
-            #Check for if filters can produce a result for the user
-            if curField in filters:
-                args = filters[curField]
-            else:
-                #If a filter for a given column havent been encounted yet we create the args for the function
-                if type(curValue) == int or type(curValue) == float:
-                    #Set initial min,max vals.
-                    min_val = 0
-                    max_val = float('inf')
-                    not_allowed = []
-                    #Package the arguments to an argument array
-                    args = [min_val,max_val,not_allowed]
-                else:
-                    #Set initial allowed to nothing
-                    allowed = ''
-                    not_allowed = []
-                    #Package the arguments to an argument array
-                    args = [allowed,not_allowed]
-
-            filters[curField] = check_valid_filter(curField,args,curOp,curValue)"""

@@ -10,6 +10,6 @@ class FilterError(Exception):
 
 class OperatorNotFoundError(Exception):
     """
-    Exception for filter operations
+    Exception for if operator is not found
     """
     pass
