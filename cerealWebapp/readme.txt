@@ -14,3 +14,5 @@ now start webserver by running
 flask run
 
 flask server runs default on http://127.0.0.1:5000/
+
+A config is required, including the secret for flask and the database connection string. a Sample is provided in "sampleconf.py" rename this to config.py for it to work
